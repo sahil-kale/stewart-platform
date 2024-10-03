@@ -1,0 +1,20 @@
+name: Python Unit Test Check
+
+on:
+  push:
+    branches:
+      - main 
+  pull_request:
+    branches: [ main ]
+
+jobs:
+  pi-unit-tests:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3 
+        with:
+          submodules: recursive
+      - name: Set up system
+        run: python3 scripts/setup.py --skip-upgrade
+      - name: Run Raspberry Pi Unit Tests
+        run: python3 scripts/test_pi_code.py

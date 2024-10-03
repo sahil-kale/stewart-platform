@@ -1,0 +1,14 @@
+{
+    "version": "0.2.0",
+    "configurations": [
+        {
+            "name": "Debug Raspberry Pi Unit Tests",
+            "type": "debugpy",
+            "request": "launch",
+            "program": "${workspaceFolder}/scripts/test_pi_code.py",
+            "args": [],
+            "console": "integratedTerminal",
+            "justMyCode": true
+        }
+    ]
+}
