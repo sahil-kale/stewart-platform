@@ -73,6 +73,7 @@ if __name__ == "__main__":
         "pyserial",
         "platformio",
         "matplotlib",
+        "scipy",
     ]
 
     # Execute functions
