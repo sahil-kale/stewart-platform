@@ -5,8 +5,6 @@
 uint8_t servoPins[] = {9, 10, 11};
 Servo servos[NUM_SERVOS];  // Array to hold servo objects
 
-#define DEBUG
-
 void setup() {
     // Initialize the serial communication
     Serial.begin(9600);
