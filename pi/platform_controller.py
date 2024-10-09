@@ -3,10 +3,15 @@ import serial
 import struct
 import time
 import argparse
+import numpy as np
 
 
 class PlatformController:
-    def __init__(self, port, baudrate=9600, debug: bool = False):
+    def __init__(self, duty_cycle_min, duty_cycle_max, port, baudrate=9600, debug: bool = False):
+        # Min and max duty cycles translate to 0 to 180 degrees on the servo
+        # gathered from empirical data primarily
+        self.duty_cycle_min = duty_cycle_min
+        self.duty_cycle_max = duty_cycle_max
         self.port = port
         self.ser = serial.Serial(port, baudrate)
         self.debug = debug
@@ -15,6 +20,13 @@ class PlatformController:
         if self.debug:
             print(f"Writing to device: {data}")
         self.ser.write(data)
+
+    def compute_duty_cycle_from_angle(self, servo_angle):
+        # Map the desired angle between 0 to pi, and map that value to the
+        # duty cycle based on min and max duty cycles
+        percentage = servo_angle / np.pi
+        duty_cycle = self.duty_cycle_min + percentage * (self.duty_cycle_max - self.duty_cycle_min)
+        return duty_cycle
 
     def write_duty_cycles(self, duty_cycle_1, duty_cycle_2, duty_cycle_3):
         bytes = bytearray()
