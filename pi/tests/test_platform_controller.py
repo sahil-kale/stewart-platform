@@ -1,5 +1,6 @@
 import sys
 import os
+import numpy as np
 
 sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), "../")))
 
@@ -48,3 +49,20 @@ def test_platform_controller_write_duty_cycles_encoded():
     bytes.extend(dutycycle_3_bytes)
 
     assert os.read(fakeser[1], 6) == bytes
+
+
+def test_duty_cycle_resolver_from_angle():
+    fakeser = create_fake_serial()
+    pc = platform_controller.PlatformController(fakeser[0])
+
+    angle_ninety_degrees_duty_cycle = pc.compute_duty_cycle_from_angle(np.pi / 2)
+
+    assert angle_ninety_degrees_duty_cycle == 1400
+
+    angle_zero_duty_cycle = pc.compute_duty_cycle_from_angle(0)
+
+    assert angle_zero_duty_cycle == 500
+
+    angle_full_duty_cycle = pc.compute_duty_cycle_from_angle(np.pi)
+
+    assert angle_full_duty_cycle == 2300

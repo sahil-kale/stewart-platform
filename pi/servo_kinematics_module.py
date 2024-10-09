@@ -58,7 +58,7 @@ class ServoKinematicsModule:
         theta1_solution, theta2_solution = result.x
 
         return theta1_solution, theta2_solution
-    
+
     def visualize_linkage(self, theta1, theta2, ax):
         """
         Visualizes the 2D linkage of the servo and arm system using forward kinematics.
