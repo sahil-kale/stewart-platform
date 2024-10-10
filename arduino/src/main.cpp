@@ -2,7 +2,7 @@
 #include <Servo.h>
 #include "serial_decryption.hpp"
 
-#define DEBUG
+//#define DEBUG
 
 uint8_t servoPins[] = {9, 10, 11};
 Servo servos[NUM_SERVOS];  // Array to hold servo objects
@@ -14,7 +14,7 @@ void setup() {
     // Attach servos to the appropriate pins once during setup
     for (uint8_t i = 0; i < NUM_SERVOS; i++) {
         servos[i].attach(servoPins[i]);
-        servos[i].attach(1400);
+        servos[i].writeMicroseconds(900); 
     }
 }
 
