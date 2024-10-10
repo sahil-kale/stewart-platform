@@ -34,10 +34,15 @@ class PlatformController:
         # Map the desired angle between 0 to pi, and map that value to the
         # duty cycle based on min and max duty cycles
         percentage = servo_angle / np.pi
+
+        # saturate the percentage to be between 0 and 1
+        percentage = np.clip(percentage, 0, 1)
+
         duty_cycle = self.duty_cycle_min + percentage * (
             self.duty_cycle_max - self.duty_cycle_min
         )
-        return duty_cycle
+
+        return int(duty_cycle)
 
     def write_duty_cycles(self, duty_cycle_1, duty_cycle_2, duty_cycle_3):
         bytes = bytearray()
@@ -45,6 +50,13 @@ class PlatformController:
         encoding_struct = struct.Struct("<HHH")
 
         bytes.extend(encoding_struct.pack(duty_cycle_1, duty_cycle_2, duty_cycle_3))
+
+        # Calculate the checksum as the sum of the 3 duty cycles
+        checksum = sum([duty_cycle_1, duty_cycle_2, duty_cycle_3])
+
+        # Append the checksum as a 4-byte unsigned integer, little-endian
+        bytes.extend(struct.pack("<I", checksum))
+
         self.write_raw(bytes)
 
     def read_serial_output(self):
@@ -70,7 +82,10 @@ if __name__ == "__main__":
     while True:
         # Ask the user for the duty cycle (use the same one for all 3)
         try:
-            duty_cycle = int(input("Enter the duty cycle: "))
+            servo_angle_deg = int(input("Enter the desired angle in degrees: "))
+            servo_angle_rad = np.deg2rad(servo_angle_deg)
+            duty_cycle = pc.compute_duty_cycle_from_angle(servo_angle_rad)
+            # Write the duty cycle to the platform
             pc.write_duty_cycles(duty_cycle, duty_cycle, duty_cycle)
             time.sleep(0.1)  # Wait briefly for the microcontroller to respond
             pc.read_serial_output()  # Read and print the serial output
