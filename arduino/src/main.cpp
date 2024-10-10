@@ -2,6 +2,8 @@
 #include <Servo.h>
 #include "serial_decryption.hpp"
 
+#define DEBUG
+
 uint8_t servoPins[] = {9, 10, 11};
 Servo servos[NUM_SERVOS];  // Array to hold servo objects
 
@@ -12,6 +14,7 @@ void setup() {
     // Attach servos to the appropriate pins once during setup
     for (uint8_t i = 0; i < NUM_SERVOS; i++) {
         servos[i].attach(servoPins[i]);
+        servos[i].attach(1400);
     }
 }
 
@@ -20,9 +23,9 @@ void loop() {
     PlatformControlRequest request;
     request.valid = false;
     
-    if (Serial.available() >= 6) {
-        char serialData[6];
-        Serial.readBytes(serialData, 6);
+    if (Serial.available() >= NUM_BYTES_PER_REQUEST) {
+        char serialData[NUM_BYTES_PER_REQUEST];
+        Serial.readBytes(serialData, NUM_BYTES_PER_REQUEST);
         request = decryptSerialData(serialData, sizeof(serialData));
         
 #ifdef DEBUG

@@ -48,7 +48,15 @@ def test_platform_controller_write_duty_cycles_encoded():
     bytes.extend(dutycycle_2_bytes)
     bytes.extend(dutycycle_3_bytes)
 
-    assert os.read(fakeser[1], 6) == bytes
+    # expect a checksum to be written, which is a uint32_t little endian sum of the 3 duty cycles
+    checksum = sum([1000, 2000, 3000])
+    checksum_bytes = checksum.to_bytes(4, byteorder="little", signed=False)
+    bytes.extend(checksum_bytes)
+
+    # get the number of bytes
+    num_bytes_expected = len(bytes)
+
+    assert os.read(fakeser[1], num_bytes_expected) == bytes
 
 
 def test_duty_cycle_resolver_from_angle():
