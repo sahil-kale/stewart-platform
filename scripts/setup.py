@@ -45,6 +45,15 @@ def update_submodules():
     run_command("git submodule update --init --recursive")
 
 
+def create_venv():
+    """Create a virtual environment."""
+    print("Creating a virtual environment...")
+
+    venv_name = "mte-380-venv"
+
+    run_command(f"python3 -m venv {venv_name}")
+
+
 if __name__ == "__main__":
     # Argument parser to handle skip_upgrade option
     parser = argparse.ArgumentParser(description="Install necessary development tools.")
@@ -58,11 +67,8 @@ if __name__ == "__main__":
     # Components to install via apt and pip
     apt_components = [
         "git",
-        "clang-format",
-        "clang-tidy",
         "build-essential",
-        "gdb",
-        "clang-tidy",
+        "python3-tk",
     ]
 
     pip_components = [
@@ -78,6 +84,7 @@ if __name__ == "__main__":
 
     # Execute functions
     update_and_upgrade(skip_upgrade=args.skip_upgrade)
+    create_venv()
     install_apt_components(apt_components)
     install_pip_components(pip_components)
     update_submodules()

@@ -3,7 +3,7 @@ import subprocess
 import sys
 import argparse
 
-EXCLUDE_DIRS = [".vscode", "build", ".pio"]
+EXCLUDE_DIRS = [".vscode", "build", ".pio", "mte-380-venv"]
 PYTHON_EXTENSION = ".py"
 
 
