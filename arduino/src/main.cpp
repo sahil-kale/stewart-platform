@@ -14,7 +14,7 @@ void setup() {
     // Attach servos to the appropriate pins once during setup
     for (uint8_t i = 0; i < NUM_SERVOS; i++) {
         servos[i].attach(servoPins[i]);
-        servos[i].writeMicroseconds(900); 
+        servos[i].writeMicroseconds(1400); 
     }
 }
 
