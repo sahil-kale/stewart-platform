@@ -43,10 +43,10 @@ class ServoKinematicsModule:
                 + constraint_violation_weight * constraint_violation
             )
 
-        bounds = [(0, np.pi / 2), (0, np.pi / 2)]
+        bounds = [(np.pi / 2, np.pi), (np.pi / 2, np.pi)]
 
         # Initial guess for the angles
-        initial_guess = [np.pi / 4, np.pi / 4]
+        initial_guess = [np.pi * 3 / 4, np.pi * 3 / 4]
 
         # Solve the minimization problem with the constraint
         result = minimize(
