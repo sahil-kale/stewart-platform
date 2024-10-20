@@ -4,6 +4,7 @@ import struct
 import time
 import argparse
 import numpy as np
+import time
 
 
 class PlatformController:
@@ -24,6 +25,11 @@ class PlatformController:
         self.duty_cycle_max = duty_cycle_max
 
         self.debug = debug
+
+        # sleep for a bit to allow the serial port to open
+        time.sleep(1)
+        # Write that the controller is ready
+        print("Platform controller ready.")
 
     def write_raw(self, data: bytearray):
         if self.debug:
@@ -65,6 +71,9 @@ class PlatformController:
             output = self.ser.readline().decode().strip()
             print(f"Received from device: {output}")
 
+    def close_port(self):
+        self.ser.close()
+
 
 if __name__ == "__main__":
     # Argument parser to handle the port, as well as debug mode
@@ -78,7 +87,6 @@ if __name__ == "__main__":
 
     args = parser.parse_args()
     pc = PlatformController(args.port, debug=args.debug)
-
     while True:
         # Ask the user for the duty cycle (use the same one for all 3)
         try:
@@ -93,4 +101,5 @@ if __name__ == "__main__":
             print("Please enter a valid integer.")
         except KeyboardInterrupt:
             print("Exiting...")
+            pc.close_port()
             break

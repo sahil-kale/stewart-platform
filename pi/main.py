@@ -1,4 +1,5 @@
 import numpy as np
+from platform_controller import PlatformController
 from platform_kinematics_module import PlatformKinematicsModule
 from servo_kinematics_module import ServoKinematicsModule
 from servo_kinematics_feeder import ServoKinematicsFeeder
@@ -6,15 +7,21 @@ from kinematics_3d_plotter import Kinematics3dPlotter
 import argparse
 import matplotlib.pyplot as plt
 from matplotlib.widgets import Slider
+import time
 
 
 class MainControlLoop:
-    def __init__(self, run_visualizer: bool = False, run_controller: bool = False):
+    def __init__(
+        self,
+        serial_port: str,
+        virtual: bool = False,
+        run_visualizer: bool = False,
+        run_controller: bool = False,
+    ):
         self.params = {
             "lh": 41 / 1000,
             "la": 51 / 1000,
             "platform_attachment_radius": 100 / 1000,
-            "control_loop_frequency": 100,
         }
 
         attachment_points_structure = [
@@ -39,6 +46,12 @@ class MainControlLoop:
                 self.attachment_points, self.params["lh"], self.params["la"]
             )
             self.create_sliders()
+
+        self.virtual = virtual
+        if not self.virtual:
+            self.pc = PlatformController(serial_port, debug=False)
+
+        self.pause_period = 0.01
 
     def create_sliders(self):
         """Create sliders for pitch, roll, and height"""
@@ -72,18 +85,27 @@ class MainControlLoop:
 
             # Compute the servo angles
             servo_angles = []
+            duty_cycles = []
             for i in range(len(servo_vectors)):
                 desired_servo_length = np.linalg.norm(servo_vectors[i])
                 servo_angle = self.sk.compute_servo_angle(desired_servo_length)
                 servo_angles.append(servo_angle)
+                duty_cycle = self.pc.compute_duty_cycle_from_angle(servo_angle[0])
+                duty_cycles.append(duty_cycle)
 
-            # TODO: send servo angles to servo controller
+            # Send the servo angles to the platform
+            if not self.virtual:
+                self.pc.write_duty_cycles(
+                    duty_cycles[0], duty_cycles[1], duty_cycles[2]
+                )
 
             # Update visualization if enabled
             if self.run_visualizer:
                 self.visualizer.update(platform_points_in_base_frame, servo_angles)
                 # Redraw the figure
-                plt.pause(0.01)  # Adjust the pause to suit real-time control loop speed
+                plt.pause(self.pause_period)
+            else:
+                time.sleep(self.pause_period)
 
 
 if __name__ == "__main__":
@@ -91,7 +113,31 @@ if __name__ == "__main__":
     parser.add_argument(
         "--visualize", action="store_true", help="Run the 3D visualization"
     )
+
+    # add an argument for the port
+    parser.add_argument(
+        "--port",
+        type=str,
+        default="/dev/ttyACM0",
+        help="The serial port for the platform controller",
+    )
+
+    # add an argument for virtual
+    parser.add_argument(
+        "--virtual",
+        action="store_true",
+        help="Run the control loop in virtual mode",
+    )
+
     args = parser.parse_args()
 
-    mcl = MainControlLoop(run_visualizer=args.visualize)
+    # for now, if visualize is not set, raise an error saying that the ball controller is not implemented yet and needs to run with the visualize flag
+    if not args.visualize:
+        raise NotImplementedError(
+            "Ball controller not implemented yet. Please run with the --visualize flag."
+        )
+
+    mcl = MainControlLoop(
+        args.port, virtual=args.virtual, run_visualizer=args.visualize
+    )
     mcl.run()

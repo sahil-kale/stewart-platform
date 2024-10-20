@@ -27,6 +27,11 @@ void loop() {
         char serialData[NUM_BYTES_PER_REQUEST];
         Serial.readBytes(serialData, NUM_BYTES_PER_REQUEST);
         request = decryptSerialData(serialData, sizeof(serialData));
+
+        // clear the serial buffer
+        while (Serial.available() > 0) {
+            Serial.read();
+        }
         
 #ifdef DEBUG
         if (request.valid) {
