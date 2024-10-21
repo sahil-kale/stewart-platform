@@ -14,15 +14,20 @@ class MainControlLoop:
     def __init__(
         self,
         serial_port: str,
+        servo_0_offset: float = 0,
+        servo_1_offset: float = 0,
+        servo_2_offset: float = 0,
         virtual: bool = False,
         run_visualizer: bool = False,
-        run_controller: bool = False,
+        run_controller: bool = False
     ):
         self.params = {
             "lh": 41 / 1000,
             "la": 51 / 1000,
             "platform_attachment_radius": 100 / 1000,
         }
+
+        self.servo_offset_radians = [np.radians(servo_0_offset), np.radians(servo_1_offset), np.radians(servo_2_offset)]
 
         attachment_points_structure = [
             [1.0, 0.0, 0.0],
@@ -90,7 +95,7 @@ class MainControlLoop:
                 desired_servo_length = np.linalg.norm(servo_vectors[i])
                 servo_angle = self.sk.compute_servo_angle(desired_servo_length)
                 servo_angles.append(servo_angle)
-                duty_cycle = self.pc.compute_duty_cycle_from_angle(servo_angle[0])
+                duty_cycle = self.pc.compute_duty_cycle_from_angle(servo_angle[0] + self.servo_offset_radians[i])
                 duty_cycles.append(duty_cycle)
 
             # Send the servo angles to the platform
