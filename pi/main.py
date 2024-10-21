@@ -19,7 +19,7 @@ class MainControlLoop:
         servo_2_offset: float = 0,
         virtual: bool = False,
         run_visualizer: bool = False,
-        run_controller: bool = False
+        run_controller: bool = False,
     ):
         self.params = {
             "lh": 41 / 1000,
