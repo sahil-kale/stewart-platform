@@ -80,6 +80,8 @@ if __name__ == "__main__":
         "platformio",
         "matplotlib",
         "scipy",
+        "cv2",
+        "glob"
     ]
 
     # Execute functions
