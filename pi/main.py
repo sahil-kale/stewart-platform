@@ -6,6 +6,7 @@ from point import Point
 from servo_kinematics_module import ServoKinematicsModule
 from servo_kinematics_feeder import ServoKinematicsFeeder
 from kinematics_3d_plotter import Kinematics3dPlotter
+from ball_controller import BallController
 import argparse
 import matplotlib.pyplot as plt
 from matplotlib.widgets import Slider
@@ -57,6 +58,9 @@ class MainControlLoop:
 
         self.pk = PlatformKinematicsModule(self.attachment_points)
         self.sk = ServoKinematicsModule(self.params["lh"], self.params["la"])
+        
+        # The gains are just 
+        self.ball_controller = BallController(1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0)
 
         self.run_visualizer = run_visualizer
         self.run_controller = run_controller
