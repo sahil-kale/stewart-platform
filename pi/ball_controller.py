@@ -30,5 +30,14 @@ class BallController:
         output_y = self.kd_y * error + self.ki_y * self.integral_error_y + self.kd_y * current_derivative_error_y
         return output_y
     
+    def run_control_loop(self, desired_position, current_position):
+        error_x = desired_position[0] - current_position[0]
+        error_y = desired_position[1] - current_position[1]
+
+        output_x = self.update_x(error_x)
+        output_y = self.update_y(error_y)
+
+        return output_x, output_y
+
 
         
