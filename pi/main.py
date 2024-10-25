@@ -59,7 +59,7 @@ class MainControlLoop:
         self.pk = PlatformKinematicsModule(self.attachment_points)
         self.sk = ServoKinematicsModule(self.params["lh"], self.params["la"])
         
-        # The gains are just 
+        # The gains are just set arbitrarily for now
         self.ball_controller = BallController(1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0)
 
         self.run_visualizer = run_visualizer
@@ -107,6 +107,11 @@ class MainControlLoop:
             # Get pitch, roll, and height from the sliders
             if self.run_controller:
                 self.current_position = self.cv_system.get_ball_coordinates()
+
+                desired_position = Point(1, 1)
+                output_angles = self.ball_controller.run_control_loop(desired_position, self.current_position)
+                
+                # (TODO) Pass the output angle to the IK controller
                 pass
             else:
                 pitch_rad = np.deg2rad(self.slider_pitch.val)
