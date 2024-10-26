@@ -15,7 +15,7 @@ import matplotlib as plt
 
 
 class Camera():
-    def __init__(self, fx, fy, u, v):
+    def __init__(self, fx, fy, u, v,num):
         #focal length, currently unknown
         self.fx = fx
         self.fy = fy
@@ -23,28 +23,58 @@ class Camera():
         # pixel resolution of camera
         self.u = u 
         self.v = v
+        self.num = num
 
+        self.ball_u = 0
+        self.ball_v = 0
+        self.cam = cv.VideoCapture(self.num)
+        # self.cam.open(self.num, cv.CAP_DSHOW)
+        if not (self.cam).isOpened():
+            print("Camera could not be opened, try again")
+            exit()
+               
         #Camera params
         self.frameSize = (u,v)
         self.cameraMatrix = np.zeros((3,3),dtype = np.float32)
         self.newCameraMatrix = np.zeros((3,3),dtype = np.float32)
-        self.dist 
-        self.rvec
-        self.tvec
+        self.dist = None
+        self.rvec = None
+        self.tvec = None
 
         #Ball type and colors
         # ballType: 
         #   0 -> ping pong
         #   1 -> golf ball
         #   2 -> steel ball
-        self.upper_color = [[0,0,0],[0,0,0],[0,0,0]]
-        self.lower_color = [[0,0,0],[0,0,0],[0,0,0]]
-    
+        self.lower_color = np.array([[0,0,232],[0,0,0],[0,0,0]])
+        self.upper_color = np.array([[0,0,255],[0,0,0],[0,0,0]])
+        
+        # (self.cam).release()
+        # cv.destroyAllWindows()
+
+    def getBallLocation(self):
+
+        (self.cam).open(self.num,cv.CAP_DSHOW)
+        while True:
+            if cv.waitKey(1) == ord('q'): break
+            _, image= (self.cam).read()
+            # cv.imshow("Frame:", image)
+            [u,v] = self.detectBall(0,image)
+            print(self.detectXYZ(u,v))
+        (self.cam).release()
+        cv.destroyAllWindows()
+
+
+
+        
+
+
     def calibrate(self,ncorner_w,ncorner_h):
         #set up for files
         root = os.getcwd()
         calibrationDir = os.path.join(root,r'\\calibration\\images')
         chessboardSize = (ncorner_w,ncorner_h) #undetermined value
+
         criteria = (cv.TERM_CRITERIA_EPS + cv.TERM_CRITERIA_MAX_ITER, 30, 0.001)
 
         #set up points arrays 
@@ -55,23 +85,21 @@ class Camera():
         imgPoints = []
 
     #recursively find all images to test
-        images = glob.glob('*.png')
+        images = glob.glob(r'C:\Users\aksha\Desktop\University\4A\MTE 380\mte-380\pi\calibration\images\*.png')
         for image in images:
             img = cv.imread(image)
             gray = cv.cvtColor(img, cv.COLOR_BGR2GRAY)
 
             ret, corners = cv.findChessboardCorners(gray, chessboardSize, None)
-
             if ret == True:
-
                 objPoints.append(objp)
                 corners2 = cv.cornerSubPix(gray,corners, (11,11), (-1,-1), criteria)
                 imgPoints.append(corners)
 
                 cv.drawChessboardCorners(img, chessboardSize, corners2, ret)
                 cv.imshow('img',img)
-                cv.waitkey(1000)
-
+                cv.waitKey(100)
+        (self.cam).release()
         cv.destroyAllWindows()
 
         #generate matrices
@@ -82,87 +110,96 @@ class Camera():
         self.dist = dist
         self.rvec = rvecs
         self.tvec = tvecs
-
         #distortion
-        img = cv.imread('cali5.png') #file name will prolly change
-        h, w =img.shape[:2]
-        newCameraMatrix, roi = cv.getOptimalNewCameraMatrix(cameraMatrix, dist, (w,h), 1, (w,h))
 
-        self.newCameraMatrix = newCameraMatrix
+        # images = glob.glob(r'C:\Users\aksha\Desktop\University\4A\MTE 380\mte-380\pi\calibration\images\*.png')
+        counter = 0
+        for image in images:
+            img = cv.imread(image) #file name will prolly change
+            h, w =img.shape[:2]
 
-        dst = cv.undistort(img, cameraMatrix, dist, None, newCameraMatrix)
-        x,y,w,h = roi
-        dst = dst[y:y+h,x:x+w]
-        cv.imwrite('caliResults.png',dst)
-        return newCameraMatrix
+            newCameraMatrix, roi = cv.getOptimalNewCameraMatrix(cameraMatrix, dist, (w,h), 1, (w,h))
+
+            self.newCameraMatrix = newCameraMatrix
+
+            dst = cv.undistort(img, cameraMatrix, dist, None, newCameraMatrix)
+            x,y,w,h = roi
+            dst = dst[y:y+h,x:x+w]
+            img_name = f'\pi\calibration\cali\\caliResults_{counter}.png'
+            path = str(os.getcwd()) + img_name
+            cv.imwrite(path,dst)
+            counter = counter + 1
 
     def calibrationImages(self):
     #  Run function to collect images
-    # 
-        cam = cv.VideoCapture(0)
         img_counter = 0
         while True:
-            ret, frame = cam.read()
+            ret, frame = (self.cam).read()
+            if not ret:
+                print("Can't receive frame (stream end?). Exiting ...")
+                break
+
             cv.imshow('test', frame)
             k = cv.waitKey(1)
-            if k%256 == 27:
+            if k%256 == 27: #ESC 
                 print('escape hit, closing the app')
                 break
-                # if the spacebar key is been pressed
-                # screenshots will be taken
-            elif k%256  == 32:
+            elif k%256  == 32: #SPACEBAR
                 # the format for storing the images screenshotted
-                img_name = f'\pi\calibration\images\\cali_{img_counter}.jpg' #set relative path for images
+                img_name = f'\pi\calibration\images\\cali_{img_counter}.png' #set relative path for images
                 path = str(os.getcwd()) + (img_name) #combine user root path to image path 
                 # saves the image as a png file
                 cv.imwrite(path, frame)
                 print('screenshot taken')
                 # the number of images automaticallly increases by 1
                 img_counter += 1
-        cam.release()
+        (self.cam).release()
 
         # stops the camera window
-        cam.destoryAllWindows()
+        (self.cam).destoryAllWindows()
 
     def detectXYZ(self, u,v):
         uv_1 = np.array([u,v,1],dtype=np.float32)
         uv_1 = uv_1.T
+        if(self.rvec is None):
+            print("Rotation Matrix is none")
+            exit()
 
-        #Camera Matrices Set Up
-        R_mtx, jac = cv.Rodrigues(self.rvec) #rotation matrix
-        Rt = np.column_stack((R_mtx,self.tvec)) #Create [R|t]
-        P_mtx = self.newCameraMatrix.dot(Rt)
-
-        #EQN for [X,Y,Z] = R^-1 (sA^-1[u;v;1] - t_vect)
-        xyz = (np.linalg.inv(R_mtx)).dot((np.linalg.inv(self.newCameraMatrix)).dot(uv_1) - self.tvec)
+        R_mtx, jac = cv.Rodrigues((self.rvec)[0]) 
+        inv_R = np.linalg.inv(R_mtx)
+        inv_newcam =  np.linalg.inv(self.newCameraMatrix)
+        xyz_c = inv_newcam.dot(uv_1)
+        xyz = inv_R.dot(xyz_c)
+        # #Camera Matrices Set Up
+        # #EQN for [X,Y,Z] = R^-1 (sA^-1[u;v;1] - t_vect)
         return xyz
 
-    def detectBall(self,balltype):
-    cap = cv.VideoCapture(0)
-    cap.set(cv.CAP_PROP_FPS, 30)
-
-    while True:
-        ret, frame = cap.read()
-        if not ret:
-            print("Could not grab frame")
-            break
+    def detectBall(self,balltype,image):
+        x = -100
+        y = -100
+        frame = image
+        # if not ret:
+        #     print("Could not grab frame")
+        #     return [None,None]
         frame = cv.resize(frame,(self.u,self.v))
         hsv = cv.cvtColor(frame, cv.COLOR_BGR2HSV)
 
         #Setup ball color array, need a function 
-        lower_ball_color = self.upper_color[balltype]
-        higher_ball_color = self.lower_color[balltype]
+        lower_ball_color = self.lower_color[0]
+        print(lower_ball_color)
+        higher_ball_color = self.upper_color[0]
+        print(higher_ball_color)
 
         mask = cv.inRange(hsv,lower_ball_color,higher_ball_color)
-        contours, _ =  cv.findContours(mask, cv.RETR_TREE, cv.CHAIN_APPROX_SIMPLE)
-        # Find the index of the largest contour
+        _, contours, _ = cv.findContours(mask, cv.RETR_TREE, cv.CHAIN_APPROX_SIMPLE)
+        # # Find the index of the largest contour
         if contours:
             # Determines the largest contour size using the cv.contour Area function
             largest_contour = max(contours, key=cv.contourArea)
             # Computes the minimum enclosing circle aroudn the largest contour
             ((x, y), radius) = cv.minEnclosingCircle(largest_contour)
             # * 4 Only consider large enough objects. If it only detects a small portion of your ball, you can test higher radius values to capture more of the ball
-            if radius > 10:
+            if radius > 10 and radius < 100:
                 # Draw a yellow circle around the ball
                 cv.circle(frame, (int(x), int(y)), int(radius), (0, 255, 255), 2)
                 # Draw a red dot in the center of the ball
@@ -171,18 +208,49 @@ class Camera():
                 print(f"Yellow ball detected at position: ({int(x)}, {int(y)})")
         # Display the resulting frame
         cv.imshow('frame', frame)
-
-        # Break the loop when 'q' is pressed
-        if cv.waitKey(1) & 0xFF == ord('q'):
-            break
-
-        return x,y
-    # Release the capture when everything is done
-    cap.release()
-    # Close all windows
-    cv.destroyAllWindows()
+        # Release the capture when everything is done
+        # (self.cam).release()
+        # # Close all windows
+        # cv.destroyAllWindows()
+        return [int(x),int(y)]
 
 
+    def nothing(x):
+        pass
+    
+    def colorMaskDetect(self):
+        self.cam.open(self.num)
+        Winname = "Frame:"
+        cv.namedWindow('Frame:')
+        # H, S,V are for Lower Boundaries
+        #H2,S2,V2 are for Upper Boundaries
+        cv.createTrackbar('H',Winname,0,255,self.nothing)
+        cv.createTrackbar('S',Winname,0,255,self.nothing)
+        cv.createTrackbar('V',Winname,0,255,self.nothing)
+        cv.createTrackbar('H2',Winname,0,255,self.nothing)
+        cv.createTrackbar('S2',Winname,0,255,self.nothing)
+        cv.createTrackbar('V2',Winname,0,255,self.nothing)
+
+
+        while (self.cam).isOpened():
+            _, frame = (self.cam).read()
+            H = cv.getTrackbarPos('H', 'Frame:')
+            S = cv.getTrackbarPos('S', 'Frame:')
+            V = cv.getTrackbarPos('V', 'Frame:')
+            H2 = cv.getTrackbarPos('H2', 'Frame:')
+            S2 = cv.getTrackbarPos('S2', 'Frame:')
+            V2 = cv.getTrackbarPos('V2', 'Frame:')
+            hsv = cv.cvtColor(frame, cv.COLOR_BGR2HSV)
+            lower_boundary = np.array([H, S, V])
+            upper_boundary = np.array([H2,S2,V2])
+            mask = cv.inRange(hsv, lower_boundary, upper_boundary)
+            final = cv.bitwise_and(frame, frame, mask=mask)
+            cv.imshow("Frame:", final)
+
+            if cv.waitKey(1) == ord('q'): break
+
+        (self.cam).release()
+        cv.destroyAllWindows()
 
 
 
