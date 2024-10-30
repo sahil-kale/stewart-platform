@@ -1,43 +1,69 @@
+from point import Point
+import numpy as np
+
+
 class BallController:
-    def __init__(self, kp_x, ki_x, kd_x, kp_y, ki_y, kd_y, dt):
+    def __init__(self, kp_x, ki_x, kd_x, kp_y, ki_y, kd_y, dt, saturation_angle):
+        # X-axis PID parameters
         self.kp_x = kp_x
         self.ki_x = ki_x
         self.kd_x = kd_x
 
+        # Y-axis PID parameters
         self.kp_y = kp_y
         self.ki_y = ki_y
         self.kd_y = kd_y
 
+        # Time step
         self.dt = dt
 
+        # Saturation angle
+        self.saturation_angle = saturation_angle
+
+        # Initialize errors for x and y
         self.integral_error_x = 0
         self.integral_error_y = 0
 
         self.previous_error_x = 0
         self.previous_error_y = 0
 
-    def update_x(self, error):
-        self.integral_error_x += error * self.dt
-        current_derivative_error_x = (error - self.previous_error_x) / self.dt
+    def update(self, error, integral_error, previous_error, kp, ki, kd):
+        # Calculate integral and derivative errors
+        integral_error += error * self.dt
+        derivative_error = (error - previous_error) / self.dt
 
-        output_x = self.kd_x * error + self.ki_x * self.integral_error_x + self.kd_x * current_derivative_error_x
-        return output_x
-    
-    def update_y(self, error):
-        self.integral_error_y += error * self.dt
-        current_derivative_error_y = (error - self.previous_error_y) / self.dt
+        # PID formula
+        output = kp * error + ki * integral_error + kd * derivative_error
 
-        output_y = self.kd_y * error + self.ki_y * self.integral_error_y + self.kd_y * current_derivative_error_y
-        return output_y
-    
-    def run_control_loop(self, desired_position, current_position):
-        error_x = desired_position[0] - current_position[0]
-        error_y = desired_position[1] - current_position[1]
+        # Return the output and updated integral/previous errors for future use
+        return output, integral_error, error
 
-        output_x = self.update_x(error_x)
-        output_y = self.update_y(error_y)
+    def run_control_loop(self, desired_position: Point, current_position: Point):
+        # Calculate errors
+        error_x = desired_position.x - current_position.x
+        error_y = desired_position.y - current_position.y
+
+        # Update X control
+        output_x, self.integral_error_x, self.previous_error_x = self.update(
+            error_x,
+            self.integral_error_x,
+            self.previous_error_x,
+            self.kp_x,
+            self.ki_x,
+            self.kd_x,
+        )
+
+        # Update Y control
+        output_y, self.integral_error_y, self.previous_error_y = self.update(
+            error_y,
+            self.integral_error_y,
+            self.previous_error_y,
+            self.kp_y,
+            self.ki_y,
+            self.kd_y,
+        )
+
+        np.clip(output_x, -self.saturation_angle, self.saturation_angle)
+        np.clip(output_y, -self.saturation_angle, self.saturation_angle)
 
         return output_x, output_y
-
-
-        
