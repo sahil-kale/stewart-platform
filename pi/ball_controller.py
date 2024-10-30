@@ -27,6 +27,15 @@ class BallController:
         self.previous_error_x = 0
         self.previous_error_y = 0
 
+    def set_gains(self, kp_x, ki_x, kd_x, kp_y, ki_y, kd_y):
+        self.kp_x = kp_x
+        self.ki_x = ki_x
+        self.kd_x = kd_x
+
+        self.kp_y = kp_y
+        self.ki_y = ki_y
+        self.kd_y = kd_y
+
     def update(self, error, integral_error, previous_error, kp, ki, kd):
         # Calculate integral and derivative errors
         integral_error += error * self.dt

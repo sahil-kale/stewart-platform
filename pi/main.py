@@ -74,7 +74,14 @@ class MainControlLoop:
             self.visualizer = Kinematics3dPlotter(
                 self.attachment_points, self.params["lh"], self.params["la"]
             )
-            self.create_sliders()
+            self.create_kinematic_sliders()
+
+        self.tune_controller = tune_controller
+        if self.tune_controller:
+            plt.figure()
+            # create a GUI with tuning sliders for kp, ki, and kd
+            # for now, even though there are 6 PID gains, we'll just tune the x-axis gains and apply them to y
+            self.create_pid_tuning_sliders()
 
         self.virtual = virtual
 
@@ -97,7 +104,7 @@ class MainControlLoop:
 
         self.pause_period = 0.01
 
-    def create_sliders(self):
+    def create_kinematic_sliders(self):
         """Create sliders for pitch, roll, and height"""
         ax_pitch = plt.axes([0.15, 0.02, 0.65, 0.03], facecolor="lightgoldenrodyellow")
         ax_roll = plt.axes([0.15, 0.06, 0.65, 0.03], facecolor="lightgoldenrodyellow")
@@ -111,6 +118,16 @@ class MainControlLoop:
         )
         self.slider_height = Slider(ax_height, "Height", 0.02, 0.1, valinit=0.06)
 
+    def create_pid_tuning_sliders(self):
+        """Create sliders for tuning kp, ki, and kd gains for the x-axis"""
+        ax_kp = plt.axes([0.15, 0.25, 0.65, 0.03], facecolor="lightgoldenrodyellow")
+        ax_ki = plt.axes([0.15, 0.30, 0.65, 0.03], facecolor="lightgoldenrodyellow")
+        ax_kd = plt.axes([0.15, 0.35, 0.65, 0.03], facecolor="lightgoldenrodyellow")
+
+        self.slider_kp = Slider(ax_kp, "Kp", 0.0, 5.0, valinit=1.0)
+        self.slider_ki = Slider(ax_ki, "Ki", 0.0, 5.0, valinit=1.0)
+        self.slider_kd = Slider(ax_kd, "Kd", 0.0, 5.0, valinit=1.0)
+
     def run(self):
         while True:
             # Get pitch, roll, and height from the sliders
@@ -120,6 +137,16 @@ class MainControlLoop:
                 desired_position = Point(1, 1)
                 output_angles = self.ball_controller.run_control_loop(desired_position, self.current_position)
                 
+                if self.tune_controller:
+                    # get slider values
+                    kp_x = self.slider_kp.val
+                    ki_x = self.slider_ki.val
+                    kd_x = self.slider_kd.val
+
+                    self.ball_controller.set_gains(kp_x, ki_x, kd_x, kp_x, ki_x, kd_x)
+
+                # Get desired position from trajectory controller
+                # Get current position from CV controller (mocked out for now)
                 desired_position = Point(1.0, 2.0)
                 output_angles = self.ball_controller.run_control_loop(
                     desired_position, self.current_position
@@ -164,6 +191,8 @@ class MainControlLoop:
             if self.run_visualizer:
                 self.visualizer.update(platform_points_in_base_frame, servo_angles)
                 # Redraw the figure
+                plt.pause(self.pause_period)
+            elif self.tune_controller:
                 plt.pause(self.pause_period)
             else:
                 time.sleep(self.pause_period)
