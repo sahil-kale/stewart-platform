@@ -81,7 +81,7 @@ if __name__ == "__main__":
         "matplotlib",
         "scipy",
         "cv2",
-        "glob"
+        "glob",
     ]
 
     # Execute functions
