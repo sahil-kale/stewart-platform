@@ -4,6 +4,7 @@ from platform_kinematics_module import PlatformKinematicsModule
 from servo_kinematics_module import ServoKinematicsModule
 from servo_kinematics_feeder import ServoKinematicsFeeder
 from kinematics_3d_plotter import Kinematics3dPlotter
+from ball_controller import BallController
 import argparse
 import matplotlib.pyplot as plt
 from matplotlib.widgets import Slider
@@ -19,7 +20,7 @@ class MainControlLoop:
         servo_offsets: list[float] = [0, 0, 0],  # degrees
         virtual: bool = False,
         run_visualizer: bool = False,
-        run_controller: bool = False,
+        run_controller: bool = True,
     ):
         self.params = {
             "lh": 41 / 1000,
@@ -60,6 +61,10 @@ class MainControlLoop:
         if not self.virtual:
             self.pc = PlatformController(serial_port, debug=False)
 
+        # Only P values for x and y populated, the rest are 0s. Saturation value of 30 degrees for now
+        # Time differential of 0.02 for 50Hz control loop
+        self.ball_controller = BallController(1.0, 0, 0, 1.0, 0, 0, 0.02, 30)
+
         self.pause_period = 0.01
 
     def create_sliders(self):
@@ -72,9 +77,38 @@ class MainControlLoop:
         self.slider_roll = Slider(ax_roll, "Roll", -14.0, 14.0, valinit=0.0)
         self.slider_height = Slider(ax_height, "Height", 0.02, 0.1, valinit=0.06)
 
+        # Sliders for PID values on x and y axes
+        # New sliders for PID values for x and y axes
+        ax_kp_x = plt.axes([0.15, 0.15, 0.65, 0.03], facecolor="lightgoldenrodyellow")
+        ax_ki_x = plt.axes([0.15, 0.19, 0.65, 0.03], facecolor="lightgoldenrodyellow")
+        ax_kd_x = plt.axes([0.15, 0.23, 0.65, 0.03], facecolor="lightgoldenrodyellow")
+
+        ax_kp_y = plt.axes([0.15, 0.27, 0.65, 0.03], facecolor="lightgoldenrodyellow")
+        ax_ki_y = plt.axes([0.15, 0.31, 0.65, 0.03], facecolor="lightgoldenrodyellow")
+        ax_kd_y = plt.axes([0.15, 0.35, 0.65, 0.03], facecolor="lightgoldenrodyellow")
+
+        # Initialize sliders with default values
+        self.slider_kp_x = Slider(ax_kp_x, "Kp X", 0.0, 10.0, valinit=1.0)
+        self.slider_ki_x = Slider(ax_ki_x, "Ki X", 0.0, 10.0, valinit=0.0)
+        self.slider_kd_x = Slider(ax_kd_x, "Kd X", 0.0, 10.0, valinit=0.0)
+
+        self.slider_kp_y = Slider(ax_kp_y, "Kp Y", 0.0, 10.0, valinit=1.0)
+        self.slider_ki_y = Slider(ax_ki_y, "Ki Y", 0.0, 10.0, valinit=0.0)
+        self.slider_kd_y = Slider(ax_kd_y, "Kd Y", 0.0, 10.0, valinit=0.0)
+
     def run(self):
         while True:
             # Get pitch, roll, and height from the sliders
+
+            # Update BallController's PID values from the sliders
+            self.ball_controller.kp_x = self.slider_kp_x.val
+            self.ball_controller.ki_x = self.slider_ki_x.val
+            self.ball_controller.kd_x = self.slider_kd_x.val
+
+            self.ball_controller.kp_y = self.slider_kp_y.val
+            self.ball_controller.ki_y = self.slider_ki_y.val
+            self.ball_controller.kd_y = self.slider_kd_y.val
+
             if self.run_controller:
                 # TODO: integrate real control logic
                 # Get desired position from trajectory controller

@@ -1,5 +1,5 @@
 class BallController:
-    def __init__(self, kp_x, ki_x, kd_x, kp_y, ki_y, kd_y, dt):
+    def __init__(self, kp_x, ki_x, kd_x, kp_y, ki_y, kd_y, dt, saturation_angle):
         self.kp_x = kp_x
         self.ki_x = ki_x
         self.kd_x = kd_x
@@ -9,6 +9,8 @@ class BallController:
         self.kd_y = kd_y
 
         self.dt = dt
+
+        self.saturation_angle = saturation_angle  # In degrees
 
         self.integral_error_x = 0
         self.integral_error_y = 0
@@ -44,5 +46,15 @@ class BallController:
 
         output_x = self.update_x(error_x)
         output_y = self.update_y(error_y)
+
+        # Ensure outputs are within saturation range
+        if output_x < -self.saturation_angle:
+            output_x = -self.saturation_angle
+        if output_x > self.saturation_angle:
+            output_x = self.saturation_angle
+        if output_y < -self.saturation_angle:
+            output_y = -self.saturation_angle
+        if output_y > self.saturation_angle:
+            output_y = self.saturation_angle
 
         return output_x, output_y
