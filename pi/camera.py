@@ -15,19 +15,20 @@ import matplotlib as plt
 
 
 class Camera():
-    def __init__(self, fx, fy, u, v,num):
+    def __init__(self,u, v,num):
         #focal length, currently unknown
-        self.fx = fx
-        self.fy = fy
+        self.u = u
+        self.v = v
 
         # pixel resolution of camera
-        self.u = u 
-        self.v = v
+
         self.num = num
 
-        self.ball_u = 0
-        self.ball_v = 0
+
         self.cam = cv.VideoCapture(self.num)
+
+        self.scale = 400
+        
         # self.cam.open(self.num, cv.CAP_DSHOW)
         if not (self.cam).isOpened():
             print("Camera could not be opened, try again")
@@ -40,34 +41,30 @@ class Camera():
         self.dist = None
         self.rvec = None
         self.tvec = None
+        self.ballLoc = [0,0]
 
         #Ball type and colors
         # ballType: 
         #   0 -> ping pong
         #   1 -> golf ball
         #   2 -> steel ball
-        self.lower_color = np.array([[0,0,232],[0,0,0],[0,0,0]])
-        self.upper_color = np.array([[0,0,255],[0,0,0],[0,0,0]])
+        self.lower_color = np.array([[58,0,205],[0,0,0],[0,0,0]])
+        self.upper_color = np.array([[191,195,255],[0,0,0],[0,0,0]])
         
         # (self.cam).release()
         # cv.destroyAllWindows()
 
     def getBallLocation(self):
-
-        (self.cam).open(self.num,cv.CAP_DSHOW)
+        (self.cam).open(self.num)
         while True:
             if cv.waitKey(1) == ord('q'): break
-            _, image= (self.cam).read()
+            _, image = (self.cam).read()
             # cv.imshow("Frame:", image)
             [u,v] = self.detectBall(0,image)
-            print(self.detectXYZ(u,v))
+            self.ballLoc = (self.scale*self.detectXYZ(u,v))
+            print(self.ballLoc)
         (self.cam).release()
         cv.destroyAllWindows()
-
-
-
-        
-
 
     def calibrate(self,ncorner_w,ncorner_h):
         #set up for files
@@ -99,7 +96,7 @@ class Camera():
                 cv.drawChessboardCorners(img, chessboardSize, corners2, ret)
                 cv.imshow('img',img)
                 cv.waitKey(100)
-        (self.cam).release()
+        # (self.cam).release()
         cv.destroyAllWindows()
 
         #generate matrices
@@ -167,12 +164,41 @@ class Camera():
 
         R_mtx, jac = cv.Rodrigues((self.rvec)[0]) 
         inv_R = np.linalg.inv(R_mtx)
-        inv_newcam =  np.linalg.inv(self.newCameraMatrix)
+        inv_newcam =  np.linalg.inv(self.cameraMatrix)
         xyz_c = inv_newcam.dot(uv_1)
-        xyz = inv_R.dot(xyz_c)
+        xyz = (inv_R.dot(xyz_c))
         # #Camera Matrices Set Up
         # #EQN for [X,Y,Z] = R^-1 (sA^-1[u;v;1] - t_vect)
         return xyz
+
+    def list_ports(self):
+        """
+        Test the ports and returns a tuple with the available ports and the ones that are working.
+        """
+        non_working_ports = []
+        dev_port = 0
+        working_ports = []
+        available_ports = []
+        while len(non_working_ports) < 6: # if there are more than 5 non working ports stop the testing. 
+            camera = cv.VideoCapture(dev_port)
+            if not camera.isOpened():
+                non_working_ports.append(dev_port)
+                print("Port %s is not working." %dev_port)
+            else:
+                is_reading, img = camera.read()
+                w = camera.get(3)
+                h = camera.get(4)
+                if is_reading:
+                    print("Port %s is working and reads images (%s x %s)" %(dev_port,h,w))
+                    working_ports.append(dev_port)
+                else:
+                    print("Port %s for camera ( %s x %s) is present but does not reads." %(dev_port,h,w))
+                    available_ports.append(dev_port)
+            dev_port +=1
+        return available_ports,working_ports,non_working_ports
+
+
+
 
     def detectBall(self,balltype,image):
         x = -100
@@ -186,9 +212,7 @@ class Camera():
 
         #Setup ball color array, need a function 
         lower_ball_color = self.lower_color[0]
-        print(lower_ball_color)
         higher_ball_color = self.upper_color[0]
-        print(higher_ball_color)
 
         mask = cv.inRange(hsv,lower_ball_color,higher_ball_color)
         _, contours, _ = cv.findContours(mask, cv.RETR_TREE, cv.CHAIN_APPROX_SIMPLE)
@@ -205,7 +229,6 @@ class Camera():
                 # Draw a red dot in the center of the ball
                 cv.circle(frame, (int(x), int(y)), 2, (0, 0, 255), -1)  # (image to draw dot on, x,y pixel coordinates, radius in pixels, RGB values in this case red, -1 indicates to fill the circle)
                 # Display the position of the ball
-                print(f"Yellow ball detected at position: ({int(x)}, {int(y)})")
         # Display the resulting frame
         cv.imshow('frame', frame)
         # Release the capture when everything is done
