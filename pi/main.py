@@ -9,7 +9,13 @@ import matplotlib.pyplot as plt
 from matplotlib.widgets import Slider
 import time
 
-# Current computed offsets are [0, 8, 10] for servo 0, 1, and 2 respectively
+import os, pty
+
+
+def create_fake_serial():
+    master, slave = pty.openpty()
+    s_name = os.ttyname(slave)
+    return s_name, master
 
 
 class MainControlLoop:
@@ -57,8 +63,11 @@ class MainControlLoop:
             self.create_sliders()
 
         self.virtual = virtual
-        if not self.virtual:
-            self.pc = PlatformController(serial_port, debug=False)
+
+        if self.virtual:
+            serial_port = create_fake_serial()[0]
+
+        self.pc = PlatformController(serial_port, debug=False)
 
         self.pause_period = 0.01
 
@@ -148,7 +157,13 @@ if __name__ == "__main__":
             "Ball controller not implemented yet. Please run with the --visualize flag."
         )
 
+    # Current computed offsets are [0, 8, 10] for servo 0, 1, and 2 respectively
+    servo_offsets = [0, 8, 10]
+
     mcl = MainControlLoop(
-        args.port, virtual=args.virtual, run_visualizer=args.visualize
+        args.port,
+        virtual=args.virtual,
+        run_visualizer=args.visualize,
+        servo_offsets=servo_offsets,
     )
     mcl.run()
