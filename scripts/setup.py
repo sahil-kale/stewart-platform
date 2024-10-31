@@ -80,7 +80,7 @@ if __name__ == "__main__":
         "platformio",
         "matplotlib",
         "scipy",
-        "python3-opencv",
+        "opencv-python",
         "glob",
     ]
 
