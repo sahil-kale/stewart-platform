@@ -4,6 +4,7 @@ import cv2 as cv
 import glob
 import os
 import matplotlib as plt
+from point import Point
 
 # Functionality
 # 1. Convert pixel coords to World Coords [done]
@@ -40,7 +41,7 @@ class Camera:
         self.dist = None
         self.rvec = None
         self.tvec = None
-        self.ballLoc = [0, 0]
+        self.ball_loc = Point(0, 0)
 
         # Ball type and colors
         # ballType:
@@ -53,18 +54,21 @@ class Camera:
         # (self.cam).release()
         # cv.destroyAllWindows()
 
-    def getBallLocation(self):
+    def open_camera(self):
         (self.cam).open(self.num)
-        while True:
-            if cv.waitKey(1) == ord("q"):
-                break
-            _, image = (self.cam).read()
-            # cv.imshow("Frame:", image)
-            [u, v] = self.detectBall(0, image)
-            self.ballLoc = self.scale * self.detectXYZ(u, v)
-            print(self.ballLoc)
+
+    def close_camera(self):
         (self.cam).release()
         cv.destroyAllWindows()
+
+    def get_ball_coordinates(self):
+        _, image = (self.cam).read()
+        # cv.imshow("Frame:", image)
+        [u, v] = self.detectBall(0, image)
+        xyz_values = self.scale * self.detect_xyz(u, v)
+        self.ball_loc.x = xyz_values[0]
+        self.ball_loc.y = xyz_values[1]
+        return self.ball_loc
 
     def calibrate(self, ncorner_w, ncorner_h):
         # set up for files
@@ -84,9 +88,7 @@ class Camera:
         imgPoints = []
 
         # recursively find all images to test
-        images = glob.glob(
-            r"C:\Users\aksha\Desktop\University\4A\MTE 380\mte-380\pi\calibration\images\*.png"
-        )
+        images = glob.glob(r"calibrationimages/*.png")
         for image in images:
             img = cv.imread(image)
             gray = cv.cvtColor(img, cv.COLOR_BGR2GRAY)
@@ -130,12 +132,12 @@ class Camera:
             dst = cv.undistort(img, cameraMatrix, dist, None, newCameraMatrix)
             x, y, w, h = roi
             dst = dst[y : y + h, x : x + w]
-            img_name = f"\pi\calibration\cali\\caliResults_{counter}.png"
+            img_name = f"calibration/cali/caliResults_{counter}.png"
             path = str(os.getcwd()) + img_name
             cv.imwrite(path, dst)
             counter = counter + 1
 
-    def calibrationImages(self):
+    def calibration_images(self):
         #  Run function to collect images
         img_counter = 0
         while True:
@@ -151,7 +153,7 @@ class Camera:
                 break
             elif k % 256 == 32:  # SPACEBAR
                 # the format for storing the images screenshotted
-                img_name = f"\pi\calibration\images\\cali_{img_counter}.png"  # set relative path for images
+                img_name = f"calibration/images/cali_{img_counter}.png"  # set relative path for images
                 path = str(os.getcwd()) + (
                     img_name
                 )  # combine user root path to image path
@@ -165,7 +167,7 @@ class Camera:
         # stops the camera window
         (self.cam).destoryAllWindows()
 
-    def detectXYZ(self, u, v):
+    def detect_xyz(self, u, v):
         uv_1 = np.array([u, v, 1], dtype=np.float32)
         uv_1 = uv_1.T
         if self.rvec is None:
