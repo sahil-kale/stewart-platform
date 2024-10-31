@@ -1,6 +1,8 @@
 import numpy as np
 from platform_controller import PlatformController
 from platform_kinematics_module import PlatformKinematicsModule
+from camera import Camera
+from point import Point
 from servo_kinematics_module import ServoKinematicsModule
 from servo_kinematics_feeder import ServoKinematicsFeeder
 from kinematics_3d_plotter import Kinematics3dPlotter
@@ -8,6 +10,7 @@ import argparse
 import matplotlib.pyplot as plt
 from matplotlib.widgets import Slider
 import time
+import json
 
 import os, pty
 
@@ -22,6 +25,7 @@ class MainControlLoop:
     def __init__(
         self,
         serial_port: str,
+        camera_port: str,
         servo_offsets: list[float] = [0, 0, 0],  # degrees
         virtual: bool = False,
         run_visualizer: bool = False,
@@ -69,6 +73,18 @@ class MainControlLoop:
 
         self.pc = PlatformController(serial_port, debug=False)
 
+        # Read camera parameters
+        # Open the JSON file
+        with open("data.json", "r") as file:
+            data = json.load(file)  # Load JSON data as a dictionary
+
+        self.cv_system = Camera(data["u"], data["v"], camera_port)
+
+        self.current_position = Point(0, 0, 0)
+
+        self.cv_system.open_camera()
+        self.cv_system.calibrate()
+
         self.pause_period = 0.01
 
     def create_sliders(self):
@@ -85,7 +101,7 @@ class MainControlLoop:
         while True:
             # Get pitch, roll, and height from the sliders
             if self.run_controller:
-                # TODO: integrate real control logic
+                self.current_position = self.cv_system.get_ball_coordinates()
                 pass
             else:
                 pitch_rad = np.deg2rad(self.slider_pitch.val)
@@ -142,6 +158,13 @@ if __name__ == "__main__":
         help="The serial port for the platform controller",
     )
 
+    parser.add_argument(
+        "--camera_port",
+        type=str,
+        default="/dev/video4",
+        help="The port for the camera",
+    )
+
     # add an argument for virtual
     parser.add_argument(
         "--virtual",
@@ -162,6 +185,7 @@ if __name__ == "__main__":
 
     mcl = MainControlLoop(
         args.port,
+        args.camera_port,
         virtual=args.virtual,
         run_visualizer=args.visualize,
         servo_offsets=servo_offsets,
