@@ -33,6 +33,7 @@ class Camera:
 
         self.cam = cv.VideoCapture(self.port)
 
+        # Amount to scale measured data by (unitless)
         self.scale = 400
 
         if not (self.cam).isOpened():
