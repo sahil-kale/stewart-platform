@@ -28,6 +28,7 @@ class MainControlLoop:
         camera_port: str,
         servo_offsets: list[float] = [0, 0, 0],  # degrees
         virtual: bool = False,
+        camera_debug: bool = False,
         run_visualizer: bool = False,
         run_controller: bool = False,
     ):
@@ -78,7 +79,7 @@ class MainControlLoop:
         with open("data.json", "r") as file:
             data = json.load(file)  # Load JSON data as a dictionary
 
-        self.cv_system = Camera(data["u"], data["v"], camera_port)
+        self.cv_system = Camera(data["u"], data["v"], camera_port, camera_debug)
 
         self.current_position = Point(0, 0, 0)
 
@@ -172,6 +173,14 @@ if __name__ == "__main__":
         help="Run the control loop in virtual mode",
     )
 
+    # add argument for CV/Camera debug
+    parser.add_argument(
+        "--camera_debug",
+        type=bool,
+        default=False,
+        help="Flag for showing more camera info for debugging",
+    )
+
     args = parser.parse_args()
 
     # for now, if visualize is not set, raise an error saying that the ball controller is not implemented yet and needs to run with the visualize flag
@@ -187,6 +196,7 @@ if __name__ == "__main__":
         args.port,
         args.camera_port,
         virtual=args.virtual,
+        camera_debug=args.camera_debug,
         run_visualizer=args.visualize,
         servo_offsets=servo_offsets,
     )

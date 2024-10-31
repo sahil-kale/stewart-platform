@@ -16,10 +16,16 @@ from point import Point
 
 
 class Camera:
-    def __init__(self, u, v, port):
+    def __init__(
+        self, u, v, ball_detection_param_x, ball_detection_param_y, port, debug=False
+    ):
+        self.debug = debug
         # focal length, currently unknown
         self.u = u
         self.v = v
+
+        self.ball_detection_param_x = ball_detection_param_x
+        self.ball_detection_param_y = ball_detection_param_y
 
         # pixel resolution of camera
 
@@ -34,6 +40,7 @@ class Camera:
             exit()
 
         # Camera params
+        self.OPEN_CV_DELAY = 100
         self.frameSize = (u, v)
         self.cameraMatrix = np.zeros((3, 3), dtype=np.float32)
         self.newCameraMatrix = np.zeros((3, 3), dtype=np.float32)
@@ -59,8 +66,10 @@ class Camera:
 
     def get_ball_coordinates(self):
         _, image = (self.cam).read()
-        [u, v] = self.detectBall(0, image)
-        xyz_values = self.scale * self.detect_xyz(u, v)
+        detected_pixel_coordinates = self.detect_ball(0, image)
+        xyz_values = self.scale * self.detect_xyz(
+            detected_pixel_coordinates.x, detected_pixel_coordinates.y
+        )
         self.ball_loc.x = xyz_values[0]
         self.ball_loc.y = xyz_values[1]
         return self.ball_loc
@@ -95,8 +104,9 @@ class Camera:
                 imgPoints.append(corners)
 
                 cv.drawChessboardCorners(img, chessboardSize, corners2, ret)
-                cv.imshow("img", img)
-                cv.waitKey(100)
+                if self.debug:
+                    cv.imshow("img", img)
+                    cv.waitKey(self.OPEN_CV_DELAY)
         cv.destroyAllWindows()
 
         # generate matrices
@@ -208,11 +218,11 @@ class Camera:
             dev_port += 1
         return available_ports, working_ports, non_working_ports
 
-    def detectBall(self, balltype, image):
-        x = -100
-        y = -100
+    def detect_ball(self, balltype, image):
+        x = self.ball_detection_param_x
+        y = self.ball_detection_param_y
         frame = image
-  
+
         frame = cv.resize(frame, (self.u, self.v))
         hsv = cv.cvtColor(frame, cv.COLOR_BGR2HSV)
 
@@ -238,9 +248,11 @@ class Camera:
                 )  # (image to draw dot on, x,y pixel coordinates, radius in pixels, RGB values in this case red, -1 indicates to fill the circle)
                 # Display the position of the ball
         # Display the resulting frame
-        cv.imshow("frame", frame)
+        if self.debug:
+            cv.imshow("frame", frame)
         # Release the capture when everything is done
-        return [int(x), int(y)]
+        pixel_coordinates = Point(int(x), int(y))
+        return pixel_coordinates
 
     def nothing(x):
         pass
