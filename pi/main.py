@@ -135,8 +135,10 @@ class MainControlLoop:
                 self.current_position = self.cv_system.get_ball_coordinates()
 
                 desired_position = Point(1, 1)
-                output_angles = self.ball_controller.run_control_loop(desired_position, self.current_position)
-                
+                output_angles = self.ball_controller.run_control_loop(
+                    desired_position, self.current_position
+                )
+
                 if self.tune_controller:
                     # get slider values
                     kp_x = self.slider_kp.val
