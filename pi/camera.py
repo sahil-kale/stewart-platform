@@ -16,20 +16,19 @@ from point import Point
 
 
 class Camera:
-    def __init__(self, u, v, num):
+    def __init__(self, u, v, port):
         # focal length, currently unknown
         self.u = u
         self.v = v
 
         # pixel resolution of camera
 
-        self.num = num
+        self.port = port
 
-        self.cam = cv.VideoCapture(self.num)
+        self.cam = cv.VideoCapture(self.port)
 
         self.scale = 400
 
-        # self.cam.open(self.num, cv.CAP_DSHOW)
         if not (self.cam).isOpened():
             print("Camera could not be opened, try again")
             exit()
@@ -51,11 +50,8 @@ class Camera:
         self.lower_color = np.array([[58, 0, 205], [0, 0, 0], [0, 0, 0]])
         self.upper_color = np.array([[191, 195, 255], [0, 0, 0], [0, 0, 0]])
 
-        # (self.cam).release()
-        # cv.destroyAllWindows()
-
     def open_camera(self):
-        (self.cam).open(self.num)
+        (self.cam).open(self.port)
 
     def close_camera(self):
         (self.cam).release()
@@ -63,7 +59,6 @@ class Camera:
 
     def get_ball_coordinates(self):
         _, image = (self.cam).read()
-        # cv.imshow("Frame:", image)
         [u, v] = self.detectBall(0, image)
         xyz_values = self.scale * self.detect_xyz(u, v)
         self.ball_loc.x = xyz_values[0]
@@ -102,7 +97,6 @@ class Camera:
                 cv.drawChessboardCorners(img, chessboardSize, corners2, ret)
                 cv.imshow("img", img)
                 cv.waitKey(100)
-        # (self.cam).release()
         cv.destroyAllWindows()
 
         # generate matrices
@@ -117,7 +111,6 @@ class Camera:
         self.tvec = tvecs
         # distortion
 
-        # images = glob.glob(r'C:\Users\aksha\Desktop\University\4A\MTE 380\mte-380\pi\calibration\images\*.png')
         counter = 0
         for image in images:
             img = cv.imread(image)  # file name will prolly change
@@ -160,7 +153,7 @@ class Camera:
                 # saves the image as a png file
                 cv.imwrite(path, frame)
                 print("screenshot taken")
-                # the number of images automaticallly increases by 1
+                # the number of images automatically increases by 1
                 img_counter += 1
         (self.cam).release()
 
@@ -179,8 +172,6 @@ class Camera:
         inv_newcam = np.linalg.inv(self.cameraMatrix)
         xyz_c = inv_newcam.dot(uv_1)
         xyz = inv_R.dot(xyz_c)
-        # #Camera Matrices Set Up
-        # #EQN for [X,Y,Z] = R^-1 (sA^-1[u;v;1] - t_vect)
         return xyz
 
     def list_ports(self):
@@ -221,9 +212,7 @@ class Camera:
         x = -100
         y = -100
         frame = image
-        # if not ret:
-        #     print("Could not grab frame")
-        #     return [None,None]
+  
         frame = cv.resize(frame, (self.u, self.v))
         hsv = cv.cvtColor(frame, cv.COLOR_BGR2HSV)
 
@@ -251,16 +240,13 @@ class Camera:
         # Display the resulting frame
         cv.imshow("frame", frame)
         # Release the capture when everything is done
-        # (self.cam).release()
-        # # Close all windows
-        # cv.destroyAllWindows()
         return [int(x), int(y)]
 
     def nothing(x):
         pass
 
     def colorMaskDetect(self):
-        self.cam.open(self.num)
+        self.cam.open(self.port)
         Winname = "Frame:"
         cv.namedWindow("Frame:")
         # H, S,V are for Lower Boundaries
