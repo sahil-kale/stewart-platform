@@ -98,12 +98,12 @@ class MainControlLoop:
         with open(file_path, "r") as file:
             data = json.load(file)  # Load JSON data as a dictionary
 
-        self.cv_system = Camera(data["u"], data["v"], camera_port, camera_debug)
+        if self.virtual is False:
+            self.cv_system = Camera(data["u"], data["v"], camera_port, camera_debug)
+            self.cv_system.open_camera()
+            self.cv_system.calibrate()
 
-        self.current_position = Point(0, 0, 0)
-
-        self.cv_system.open_camera()
-        self.cv_system.calibrate()
+        self.current_position = Point(0, 0)
 
         self.pause_period = 0.01
 
@@ -135,7 +135,10 @@ class MainControlLoop:
         while True:
             # Get pitch, roll, and height from the sliders
             if self.run_controller:
-                self.current_position = self.cv_system.get_ball_coordinates()
+                if self.virtual is False:
+                    self.current_position = self.cv_system.get_ball_coordinates()
+                else:
+                    self.current_position = Point(0, 0)
 
                 desired_position = Point(1, 1)
                 output_angles = self.ball_controller.run_control_loop(
@@ -239,11 +242,10 @@ if __name__ == "__main__":
     )
 
     parser.add_argument(
-        "--run_controller",
+        "--inhibit_controller",
         action="store_true",
         help="Run the control loop",
     )
-
     parser.add_argument(
         "--tune_controller",
         action="store_true",
@@ -251,6 +253,8 @@ if __name__ == "__main__":
     )
 
     args = parser.parse_args()
+
+    run_controller = args.inhibit_controller == False
 
     # Current computed offsets are [0, 8, 10] for servo 0, 1, and 2 respectively
     servo_offsets = [0, 8, 10]
@@ -263,5 +267,6 @@ if __name__ == "__main__":
         run_visualizer=args.visualize,
         servo_offsets=servo_offsets,
         tune_controller=args.tune_controller,
+        run_controller=run_controller,
     )
     mcl.run()
