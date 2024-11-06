@@ -98,10 +98,10 @@ class MainControlLoop:
         with open(file_path, "r") as file:
             data = json.load(file)  # Load JSON data as a dictionary
 
-        if self.virtual is False:
+        if self.virtual is not True:
             self.cv_system = Camera(data["u"], data["v"], camera_port, camera_debug)
             self.cv_system.open_camera()
-            self.cv_system.calibrate()
+            self.cv_system.calibrate(8, 6)
 
         self.current_position = Point(0, 0)
 
@@ -127,9 +127,9 @@ class MainControlLoop:
         ax_ki = plt.axes([0.15, 0.30, 0.65, 0.03], facecolor="lightgoldenrodyellow")
         ax_kd = plt.axes([0.15, 0.35, 0.65, 0.03], facecolor="lightgoldenrodyellow")
 
-        self.slider_kp = Slider(ax_kp, "Kp", 0.0, 5.0, valinit=1.0)
-        self.slider_ki = Slider(ax_ki, "Ki", 0.0, 5.0, valinit=1.0)
-        self.slider_kd = Slider(ax_kd, "Kd", 0.0, 5.0, valinit=1.0)
+        self.slider_kp = Slider(ax_kp, "Kp", 0.0, 1000.0, valinit=10.0)
+        self.slider_ki = Slider(ax_ki, "Ki", 0.0, 1000.0, valinit=0.0)
+        self.slider_kd = Slider(ax_kd, "Kd", 0.0, 1000.0, valinit=1.0)
 
     def run(self):
         while True:
@@ -137,10 +137,11 @@ class MainControlLoop:
             if self.run_controller:
                 if self.virtual is False:
                     self.current_position = self.cv_system.get_ball_coordinates()
+                    print(f"Current position is: {self.current_position}")
                 else:
                     self.current_position = Point(0, 0)
 
-                desired_position = Point(1, 1)
+                desired_position = Point(0, 0)
                 output_angles = self.ball_controller.run_control_loop(
                     desired_position, self.current_position
                 )
@@ -222,7 +223,7 @@ if __name__ == "__main__":
     parser.add_argument(
         "--camera_port",
         type=str,
-        default="/dev/video4",
+        default="/dev/video0",
         help="The port for the camera",
     )
 
