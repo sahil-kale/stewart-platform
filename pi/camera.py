@@ -18,19 +18,19 @@ from point import Point
 class Camera:
     def __init__(self, u, v, port, debug=False):
         self.debug = debug
-        # focal length, currently unknown
+
+        # Frame size of camera
         self.u = u
         self.v = v
 
-        # pixel resolution of camera
-
+        # Set camera object and port
         self.port = port
-
         self.cam = cv.VideoCapture(self.port)
 
         # Amount to scale measured data by (unitless)
-        self.scale = 400 / 1000
+        self.scale = 400
 
+        # Check if camera has been opened before
         if not (self.cam).isOpened():
             print("Camera could not be opened, try again")
             exit()
@@ -50,8 +50,8 @@ class Camera:
         #   0 -> ping pong
         #   1 -> golf ball
         #   2 -> steel ball
-        self.lower_color = np.array([[58, 0, 205], [0, 0, 0], [0, 0, 0]])
-        self.upper_color = np.array([[191, 195, 255], [0, 0, 0], [0, 0, 0]])
+        self.lower_color = np.array([[0, 0, 255], [0, 0, 0], [0, 0, 0]])
+        self.upper_color = np.array([[255, 255, 255], [0, 0, 0], [0, 0, 0]])
 
     def open_camera(self):
         (self.cam).open(self.port)
@@ -186,33 +186,52 @@ class Camera:
         frame = cv.resize(frame, (self.u, self.v))
         hsv = cv.cvtColor(frame, cv.COLOR_BGR2HSV)
 
-        # Setup ball color array, need a function
+        x = -1000 * 1000 / self.scale
+        y = -1000 * 1000 / self.scale
+
+        # Setup ball color array
         lower_ball_color = self.lower_color[0]
         higher_ball_color = self.upper_color[0]
 
+        # Generate Mask and contours of ball in frame
         mask = cv.inRange(hsv, lower_ball_color, higher_ball_color)
         contours, _ = cv.findContours(mask, cv.RETR_TREE, cv.CHAIN_APPROX_SIMPLE)
+
+        # Generate bounding circle for ball area
+        cv.circle(frame, (int(self.u / 2), int(self.v / 2)), 200, (255, 0, 0), 2)
+        cv.circle(frame, (int(self.u / 2), int(self.v / 2)), 2, (0, 0, 255), -1)
+
         # # Find the index of the largest contour
         if contours:
             # Determines the largest contour size using the cv.contour Area function
-            largest_contour = max(contours, key=cv.contourArea)
-            # Computes the minimum enclosing circle aroudn the largest contour
-            ((x, y), radius) = cv.minEnclosingCircle(largest_contour)
-            # * 4 Only consider large enough objects. If it only detects a small portion of your ball, you can test higher radius values to capture more of the ball
-            if radius > 10 and radius < 100:
-                # Draw a yellow circle around the ball
-                cv.circle(frame, (int(x), int(y)), int(radius), (0, 255, 255), 2)
-                # Draw a red dot in the center of the ball
-                cv.circle(
-                    frame, (int(x), int(y)), 2, (0, 0, 255), -1
-                )  # (image to draw dot on, x,y pixel coordinates, radius in pixels, RGB values in this case red, -1 indicates to fill the circle)
-                # Display the position of the ball
-        # Display the resulting frame
+            for contour in contours:
+                ((x_c, y_c), radius) = cv.minEnclosingCircle(contour)
+                if (
+                    int(
+                        np.sqrt(
+                            np.abs(x_c - (self.u / 2)) ** 2
+                            + np.abs(y_c - (self.v / 2)) ** 2
+                        )
+                    )
+                    < 200
+                ):
+                    if radius > 30 and radius < 40:
+                        x = x_c
+                        y = y_c
+                        # Draw a yellow circle around the ball
+                        cv.circle(
+                            frame, (int(x), int(y)), int(radius), (0, 255, 255), 2
+                        )
+                        # Draw a red dot in the center of the ball
+                        cv.circle(frame, (int(x), int(y)), 2, (0, 0, 255), -1)
+                        # (image to draw dot on, x,y pixel coordinates, radius in pixels, RGB values in this case red, -1 indicates to fill the circle)
+                        # Display the position of the ball
+                # Display the resulting frame
         if self.debug:
             cv.imshow("frame", frame)
             cv.waitKey(1)
         # Release the capture when everything is done
-        pixel_coordinates = Point(int(x), int(y))
+        pixel_coordinates = Point(int(x / 1000), int(y / 1000))
         return pixel_coordinates
 
     def nothing(x):

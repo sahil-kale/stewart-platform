@@ -102,6 +102,7 @@ class MainControlLoop:
             self.cv_system = Camera(data["u"], data["v"], camera_port, camera_debug)
             self.cv_system.open_camera()
             self.cv_system.calibrate(8, 6)
+            # self.cv_system.colorMaskDetect()
 
         self.current_position = Point(0, 0)
 
