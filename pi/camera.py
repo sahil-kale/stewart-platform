@@ -16,16 +16,11 @@ from point import Point
 
 
 class Camera:
-    def __init__(
-        self, u, v, ball_detection_param_x, ball_detection_param_y, port, debug=False
-    ):
+    def __init__(self, u, v, port, debug=False):
         self.debug = debug
         # focal length, currently unknown
         self.u = u
         self.v = v
-
-        self.ball_detection_param_x = ball_detection_param_x
-        self.ball_detection_param_y = ball_detection_param_y
 
         # pixel resolution of camera
 
@@ -34,7 +29,7 @@ class Camera:
         self.cam = cv.VideoCapture(self.port)
 
         # Amount to scale measured data by (unitless)
-        self.scale = 400
+        self.scale = 400 / 1000
 
         if not (self.cam).isOpened():
             print("Camera could not be opened, try again")
@@ -78,7 +73,7 @@ class Camera:
     def calibrate(self, ncorner_w, ncorner_h):
         # set up for files
         root = os.getcwd()
-        calibrationDir = os.path.join(root, r"\\calibration\\images")
+        calibrationDir = os.path.join(root, r"pi/calibration/images")
         chessboardSize = (ncorner_w, ncorner_h)  # undetermined value
 
         criteria = (cv.TERM_CRITERIA_EPS + cv.TERM_CRITERIA_MAX_ITER, 30, 0.001)
@@ -93,7 +88,7 @@ class Camera:
         imgPoints = []
 
         # recursively find all images to test
-        images = glob.glob(r"calibrationimages/*.png")
+        images = glob.glob(os.path.join(calibrationDir, "*.png"))
         for image in images:
             img = cv.imread(image)
             gray = cv.cvtColor(img, cv.COLOR_BGR2GRAY)
@@ -185,43 +180,7 @@ class Camera:
         xyz = inv_R.dot(xyz_c)
         return xyz
 
-    def list_ports(self):
-        """
-        Test the ports and returns a tuple with the available ports and the ones that are working.
-        """
-        non_working_ports = []
-        dev_port = 0
-        working_ports = []
-        available_ports = []
-        while (
-            len(non_working_ports) < 6
-        ):  # if there are more than 5 non working ports stop the testing.
-            camera = cv.VideoCapture(dev_port)
-            if not camera.isOpened():
-                non_working_ports.append(dev_port)
-                print("Port %s is not working." % dev_port)
-            else:
-                is_reading, img = camera.read()
-                w = camera.get(3)
-                h = camera.get(4)
-                if is_reading:
-                    print(
-                        "Port %s is working and reads images (%s x %s)"
-                        % (dev_port, h, w)
-                    )
-                    working_ports.append(dev_port)
-                else:
-                    print(
-                        "Port %s for camera ( %s x %s) is present but does not reads."
-                        % (dev_port, h, w)
-                    )
-                    available_ports.append(dev_port)
-            dev_port += 1
-        return available_ports, working_ports, non_working_ports
-
     def detect_ball(self, balltype, image):
-        x = self.ball_detection_param_x
-        y = self.ball_detection_param_y
         frame = image
 
         frame = cv.resize(frame, (self.u, self.v))
@@ -232,7 +191,7 @@ class Camera:
         higher_ball_color = self.upper_color[0]
 
         mask = cv.inRange(hsv, lower_ball_color, higher_ball_color)
-        _, contours, _ = cv.findContours(mask, cv.RETR_TREE, cv.CHAIN_APPROX_SIMPLE)
+        contours, _ = cv.findContours(mask, cv.RETR_TREE, cv.CHAIN_APPROX_SIMPLE)
         # # Find the index of the largest contour
         if contours:
             # Determines the largest contour size using the cv.contour Area function
@@ -251,6 +210,7 @@ class Camera:
         # Display the resulting frame
         if self.debug:
             cv.imshow("frame", frame)
+            cv.waitKey(1)
         # Release the capture when everything is done
         pixel_coordinates = Point(int(x), int(y))
         return pixel_coordinates
