@@ -90,9 +90,12 @@ class MainControlLoop:
 
         self.pc = PlatformController(serial_port, debug=False)
 
-        # Read camera parameters
-        # Open the JSON file
-        with open("data.json", "r") as file:
+        # get the current directory
+        current_dir = os.path.dirname(os.path.realpath(__file__))
+        # get the file camera.json with the current dir
+        file_path = os.path.join(current_dir, "camera_params.json")
+
+        with open(file_path, "r") as file:
             data = json.load(file)  # Load JSON data as a dictionary
 
         self.cv_system = Camera(data["u"], data["v"], camera_port, camera_debug)
