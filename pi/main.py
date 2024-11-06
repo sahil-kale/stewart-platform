@@ -33,6 +33,7 @@ class MainControlLoop:
         run_visualizer: bool = False,
         run_controller: bool = True,
         tune_controller: bool = False,
+        cam_color_mask_detect: bool = False,
     ):
         self.pause_period = 0.01
         self.saturate_angle = 14.0
@@ -95,6 +96,8 @@ class MainControlLoop:
         # get the file camera.json with the current dir
         file_path = os.path.join(current_dir, "camera_params.json")
 
+        self.camera_debug = camera_debug
+
         with open(file_path, "r") as file:
             data = json.load(file)  # Load JSON data as a dictionary
 
@@ -102,7 +105,8 @@ class MainControlLoop:
             self.cv_system = Camera(data["u"], data["v"], camera_port, camera_debug)
             self.cv_system.open_camera()
             self.cv_system.calibrate(8, 6)
-            # self.cv_system.colorMaskDetect()
+            if cam_color_mask_detect:
+                self.cv_system.colorMaskDetect()
 
         self.current_position = Point(0, 0)
 
@@ -138,7 +142,8 @@ class MainControlLoop:
             if self.run_controller:
                 if self.virtual is False:
                     self.current_position = self.cv_system.get_ball_coordinates()
-                    print(f"Current position is: {self.current_position}")
+                    if self.camera_debug:
+                        print(f"Current position is: {self.current_position}")
                 else:
                     self.current_position = Point(0, 0)
 
@@ -238,8 +243,7 @@ if __name__ == "__main__":
     # add argument for CV/Camera debug
     parser.add_argument(
         "--camera_debug",
-        type=bool,
-        default=False,
+        action="store_true",
         help="Flag for showing more camera info for debugging",
     )
 
@@ -252,6 +256,12 @@ if __name__ == "__main__":
         "--tune_controller",
         action="store_true",
         help="Run the control loop in tuning mode",
+    )
+
+    parser.add_argument(
+        "--cam_color_mask_detect",
+        action="store_true",
+        help="Run the camera calibration",
     )
 
     args = parser.parse_args()
@@ -270,5 +280,6 @@ if __name__ == "__main__":
         servo_offsets=servo_offsets,
         tune_controller=args.tune_controller,
         run_controller=run_controller,
+        cam_color_mask_detect=args.cam_color_mask_detect,
     )
     mcl.run()
