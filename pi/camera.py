@@ -62,19 +62,21 @@ class Camera:
 
     def get_ball_coordinates(self):
         _, image = (self.cam).read()
-        detected_pixel_coordinates = self.detect_ball(0, image)
+        detected_pixel_coordinates, isValidLocation = self.detect_ball(0, image)
         xyz_values = self.scale * self.detect_xyz(
             detected_pixel_coordinates.x, detected_pixel_coordinates.y
         )
-        self.ball_loc.x = xyz_values[0]
-        self.ball_loc.y = xyz_values[1]
-        return self.ball_loc
+        
+        self.ball_loc.x = xyz_values[0]/1000
+        self.ball_loc.y = xyz_values[1]/1000
+        return self.ball_loc, isValidLocation
 
     def calibrate(self, ncorner_w, ncorner_h):
         # set up for files
         root = os.getcwd()
-        calibrationDir = os.path.join(root, r"pi/calibration/images")
-        chessboardSize = (ncorner_w, ncorner_h)  # undetermined value
+        calibrationDir = os.path.join(root, r'/pi/calibration/images')
+        print(calibrationDir)
+        chessboardSize = (ncorner_w, ncorner_h) 
 
         criteria = (cv.TERM_CRITERIA_EPS + cv.TERM_CRITERIA_MAX_ITER, 30, 0.001)
 
@@ -86,6 +88,7 @@ class Camera:
 
         objPoints = []
         imgPoints = []
+        calibrationDir = r'/home/pi/Desktop/mte-380/pi/calibration/images'
 
         # recursively find all images to test
         images = glob.glob(os.path.join(calibrationDir, "*.png"))
@@ -94,17 +97,16 @@ class Camera:
             gray = cv.cvtColor(img, cv.COLOR_BGR2GRAY)
 
             ret, corners = cv.findChessboardCorners(gray, chessboardSize, None)
+            print(ret)
             if ret == True:
                 objPoints.append(objp)
                 corners2 = cv.cornerSubPix(gray, corners, (11, 11), (-1, -1), criteria)
                 imgPoints.append(corners)
-
                 cv.drawChessboardCorners(img, chessboardSize, corners2, ret)
                 if self.debug:
                     cv.imshow("img", img)
                     cv.waitKey(self.OPEN_CV_DELAY)
         cv.destroyAllWindows()
-
         # generate matrices
         ret, cameraMatrix, dist, rvecs, tvecs = cv.calibrateCamera(
             objPoints, imgPoints, self.frameSize, None, None
@@ -152,11 +154,12 @@ class Camera:
                 break
             elif k % 256 == 32:  # SPACEBAR
                 # the format for storing the images screenshotted
-                img_name = f"calibration/images/cali_{img_counter}.png"  # set relative path for images
+                img_name = f"/pi/calibration/images/cali_{img_counter}.png"  # set relative path for images
                 path = str(os.getcwd()) + (
                     img_name
                 )  # combine user root path to image path
                 # saves the image as a png file
+                print(path)
                 cv.imwrite(path, frame)
                 print("screenshot taken")
                 # the number of images automatically increases by 1
@@ -175,19 +178,19 @@ class Camera:
 
         R_mtx, jac = cv.Rodrigues((self.rvec)[0])
         inv_R = np.linalg.inv(R_mtx)
-        inv_newcam = np.linalg.inv(self.cameraMatrix)
-        xyz_c = inv_newcam.dot(uv_1)
+        inv_cam = np.linalg.inv(self.cameraMatrix)
+        xyz_c = inv_cam.dot(uv_1)
         xyz = inv_R.dot(xyz_c)
         return xyz
+        
+            
 
     def detect_ball(self, balltype, image):
         frame = image
+        isInFrame  = False
 
         frame = cv.resize(frame, (self.u, self.v))
         hsv = cv.cvtColor(frame, cv.COLOR_BGR2HSV)
-
-        x = -1000 * 1000 / self.scale
-        y = -1000 * 1000 / self.scale
 
         # Setup ball color array
         lower_ball_color = self.lower_color[0]
@@ -197,9 +200,14 @@ class Camera:
         mask = cv.inRange(hsv, lower_ball_color, higher_ball_color)
         contours, _ = cv.findContours(mask, cv.RETR_TREE, cv.CHAIN_APPROX_SIMPLE)
 
+        rad = 250
         # Generate bounding circle for ball area
-        cv.circle(frame, (int(self.u / 2), int(self.v / 2)), 200, (255, 0, 0), 2)
+        cv.circle(frame, (int(self.u / 2), int(self.v / 2)), rad, (255, 0, 0), 2)
         cv.circle(frame, (int(self.u / 2), int(self.v / 2)), 2, (0, 0, 255), -1)
+        cv.arrowedLine(frame, (int(self.u / 2), int(self.v / 2)), (int(self.u / 2)-200, int(self.v / 2)),  
+                    (255,0,255), 5, tipLength = 0.05)
+        cv.arrowedLine(frame, (int(self.u / 2), int(self.v / 2)), (int(self.u / 2), int(self.v / 2)-200),  
+                    (255,255,0), 5, tipLength = 0.05)
 
         # # Find the index of the largest contour
         if contours:
@@ -213,7 +221,7 @@ class Camera:
                             + np.abs(y_c - (self.v / 2)) ** 2
                         )
                     )
-                    < 200
+                    < rad
                 ):
                     if radius > 30 and radius < 40:
                         x = x_c
@@ -224,6 +232,7 @@ class Camera:
                         )
                         # Draw a red dot in the center of the ball
                         cv.circle(frame, (int(x), int(y)), 2, (0, 0, 255), -1)
+                        isInFrame = True
                         # (image to draw dot on, x,y pixel coordinates, radius in pixels, RGB values in this case red, -1 indicates to fill the circle)
                         # Display the position of the ball
                 # Display the resulting frame
@@ -231,8 +240,14 @@ class Camera:
             cv.imshow("frame", frame)
             cv.waitKey(1)
         # Release the capture when everything is done
-        pixel_coordinates = Point(int(x / 1000), int(y / 1000))
-        return pixel_coordinates
+        
+        if(isInFrame == False):
+                x = 0
+                y = 0
+        
+        pixel_coordinates = Point(int(x), int(y))
+        
+        return pixel_coordinates, isInFrame
 
     def nothing(x):
         pass
