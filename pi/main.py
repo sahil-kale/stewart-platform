@@ -34,6 +34,7 @@ class MainControlLoop:
         run_controller: bool = True,
         tune_controller: bool = False,
         cam_color_mask_detect: bool = False,
+        cam_calibration_images: bool = False,
     ):
         self.pause_period = 0.01
         self.saturate_angle = 14.0
@@ -103,11 +104,12 @@ class MainControlLoop:
 
         if self.virtual is not True:
             self.cv_system = Camera(data["u"], data["v"], camera_port, camera_debug)
+            # self.cv_system.calibration_images()
             self.cv_system.open_camera()
-            self.cv_system.calibrate(8, 6)
+            self.cv_system.calibrate(9, 6)
             if cam_color_mask_detect:
                 self.cv_system.colorMaskDetect()
-
+            
         self.current_position = Point(0, 0)
 
         self.pause_period = 0.01
@@ -141,9 +143,14 @@ class MainControlLoop:
             # Get pitch, roll, and height from the sliders
             if self.run_controller:
                 if self.virtual is False:
-                    self.current_position = self.cv_system.get_ball_coordinates()
+                    current_position, validity = self.cv_system.get_ball_coordinates()
                     if self.camera_debug:
                         print(f"Current position is: {self.current_position}")
+
+                    if validity is True:
+                        self.current_position = current_position
+                    else:
+                        print("Ball not detected!!! Using old value for now")
                 else:
                     self.current_position = Point(0, 0)
 
@@ -197,10 +204,10 @@ class MainControlLoop:
                 duty_cycles.append(duty_cycle)
 
             # Send the servo angles to the platform
-            if not self.virtual:
-                self.pc.write_duty_cycles(
-                    duty_cycles[0], duty_cycles[1], duty_cycles[2]
-                )
+            #if not self.virtual:
+            #    self.pc.write_duty_cycles(
+            #        duty_cycles[0], duty_cycles[1], duty_cycles[2]
+            #    )
 
             # Update visualization if enabled
             if self.run_visualizer:
@@ -263,6 +270,7 @@ if __name__ == "__main__":
         action="store_true",
         help="Run the camera calibration",
     )
+    
 
     args = parser.parse_args()
 
