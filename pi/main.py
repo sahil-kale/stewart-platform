@@ -36,7 +36,7 @@ class MainControlLoop:
         cam_color_mask_detect: bool = False,
         cam_calibration_images: bool = False,
     ):
-        self.pause_period = 0.01
+        self.pause_period = 0.05
         self.saturate_angle = 14
         self.params = {
             "lh": 41 / 1000,
@@ -64,14 +64,16 @@ class MainControlLoop:
         self.pk = PlatformKinematicsModule(self.attachment_points)
         self.sk = ServoKinematicsModule(self.params["lh"], self.params["la"])
 
-        # The gains are just set arbitrarily for now
+        kp = 1.2
+        ki = 0.0
+        kd = 0.02
         self.ball_controller = BallController(
-            0.0,
-            0.0,
-            0.0,
-            1.0,
-            1.0,
-            1.0,
+            kp,
+            ki,
+            kd,
+            kp,
+            ki,
+            kd,
             self.pause_period,
             np.deg2rad(self.saturate_angle),
         )
@@ -115,8 +117,6 @@ class MainControlLoop:
 
         self.current_position = Point(0.0, 0.0)
 
-        self.pause_period = 0.001
-
     def create_kinematic_sliders(self):
         """Create sliders for pitch, roll, and height"""
         ax_pitch = plt.axes([0.15, 0.02, 0.65, 0.03], facecolor="lightgoldenrodyellow")
@@ -144,6 +144,7 @@ class MainControlLoop:
     def run(self):
         while True:
             # Get pitch, roll, and height from the sliders
+            time_since_start = time.time()
             if self.run_controller:
                 if self.virtual is False:
                     current_position = self.cv_system.get_ball_coordinates()
@@ -170,10 +171,6 @@ class MainControlLoop:
                     kd_x = self.slider_kd.val
 
                     self.ball_controller.set_gains(kp_x, ki_x, kd_x, kp_x, ki_x, kd_x)
-
-                output_angles = self.ball_controller.run_control_loop(
-                    desired_position, self.current_position
-                )
 
                 pitch_rad = output_angles[0]
                 roll_rad = output_angles[1]
@@ -210,17 +207,22 @@ class MainControlLoop:
                     duty_cycles[0], duty_cycles[1], duty_cycles[2]
                 )
 
+            time_elapsed = time.time() - time_since_start
+            pause_time = self.pause_period - time_elapsed
+            if pause_time < 0:
+                print(
+                    f"Loop is taking too long to run! {time_elapsed} seconds, {pause_time} seconds"
+                )
+                pause_time = 0
             # Update visualization if enabled
             if self.run_visualizer:
                 self.visualizer.update(platform_points_in_base_frame, servo_angles)
                 # Redraw the figure
-                plt.pause(self.pause_period)
+                plt.pause(pause_time)
             elif self.tune_controller:
-                plt.pause(self.pause_period)
+                plt.pause(pause_time)
             else:
-                time.sleep(self.pause_period)
-            # print the current time
-            print(time.time())
+                time.sleep(pause_time)
 
 
 if __name__ == "__main__":
