@@ -3,6 +3,7 @@ import cv2 as cv
 import glob
 from point import Point
 import json
+import subprocess
 
 
 class Camera:
@@ -35,6 +36,34 @@ class Camera:
         self.cameraMatrix = np.zeros((3, 3), dtype=np.float32)
         self.lower_color = np.array([[0, 0, 255], [0, 0, 0], [0, 0, 0]])
         self.upper_color = np.array([[255, 255, 255], [0, 0, 0], [0, 0, 0]])
+
+        self.set_camera_brightness(25)
+        self.set_camera_contrast(50)
+        self.set_camera_saturation(99)
+        self.set_auto_white_balance(1)
+        self.set_camera_hue(100)
+
+    def set_camera_brightness(self, brightness):
+        # Set camera brightness
+        subprocess.run(["v4l2-ctl", "-d", self.port, "-c", f"brightness={brightness}"])
+
+    def set_camera_contrast(self, contrast):
+        # Set camera contrast
+        subprocess.run(["v4l2-ctl", "-d", self.port, "-c", f"contrast={contrast}"])
+
+    def set_camera_saturation(self, saturation):
+        # Set camera saturation
+        subprocess.run(["v4l2-ctl", "-d", self.port, "-c", f"saturation={saturation}"])
+
+    def set_auto_white_balance(self, auto):
+        # Set camera white balance
+        subprocess.run(
+            ["v4l2-ctl", "-d", self.port, "-c", f"white_balance_automatic={auto}"]
+        )
+
+    def set_camera_hue(self, hue):
+        # Set camera hue
+        subprocess.run(["v4l2-ctl", "-d", self.port, "-c", f"hue={hue}"])
 
     def calibrate_cam_from_images(self, dir="pi/calibration/test"):
         # Get images from calibration folder
@@ -142,6 +171,11 @@ class Camera:
         # Apply the combined mask to the original frame
         res = cv.bitwise_and(frame, frame, mask=combined_mask)
 
+        # image show the masked frame
+        if self.debug:
+            cv.imshow("Masked Frame Colour", res)
+            cv.waitKey(1)
+
         # Greyscale the mask to use with filters
         gray = cv.cvtColor(res, cv.COLOR_BGR2GRAY)
         blurred = cv.GaussianBlur(gray, (9, 9), 0)  # noise reduction
@@ -153,7 +187,7 @@ class Camera:
             minDist=30,
             param1=50,
             param2=30,
-            minRadius=20,
+            minRadius=10,
             maxRadius=50,
         )
         # Draw detected circles on the original image

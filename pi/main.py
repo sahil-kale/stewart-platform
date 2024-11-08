@@ -37,7 +37,7 @@ class MainControlLoop:
         cam_calibration_images: bool = False,
     ):
         self.pause_period = 0.01
-        self.saturate_angle = 14.0
+        self.saturate_angle = 14
         self.params = {
             "lh": 41 / 1000,
             "la": 51 / 1000,
@@ -66,7 +66,14 @@ class MainControlLoop:
 
         # The gains are just set arbitrarily for now
         self.ball_controller = BallController(
-            1.0, 1.0, 1.0, 1.0, 1.0, 1.0, self.pause_period, self.saturate_angle
+            0.0,
+            0.0,
+            0.0,
+            1.0,
+            1.0,
+            1.0,
+            self.pause_period,
+            np.deg2rad(self.saturate_angle),
         )
 
         self.run_visualizer = run_visualizer
@@ -106,9 +113,9 @@ class MainControlLoop:
             self.cv_system = Camera(data["u"], data["v"], camera_port, camera_debug)
             self.cv_system.load_camera_params("pi/camera_calibration_data.json")
 
-        self.current_position = Point(0, 0)
+        self.current_position = Point(0.0, 0.0)
 
-        self.pause_period = 0.01
+        self.pause_period = 0.001
 
     def create_kinematic_sliders(self):
         """Create sliders for pitch, roll, and height"""
@@ -126,13 +133,13 @@ class MainControlLoop:
 
     def create_pid_tuning_sliders(self):
         """Create sliders for tuning kp, ki, and kd gains for the x-axis"""
-        ax_kp = plt.axe  # s([0.15, 0.25, 0.65, 0.03], facecolor="lightgoldenrodyellow")
+        ax_kp = plt.axes([0.15, 0.25, 0.65, 0.03], facecolor="lightgoldenrodyellow")
         ax_ki = plt.axes([0.15, 0.30, 0.65, 0.03], facecolor="lightgoldenrodyellow")
         ax_kd = plt.axes([0.15, 0.35, 0.65, 0.03], facecolor="lightgoldenrodyellow")
 
-        self.slider_kp = Slider(ax_kp, "Kp", 0.0, 1000.0, valinit=10.0)
-        self.slider_ki = Slider(ax_ki, "Ki", 0.0, 1000.0, valinit=0.0)
-        self.slider_kd = Slider(ax_kd, "Kd", 0.0, 1000.0, valinit=1.0)
+        self.slider_kp = Slider(ax_kp, "Kp", 0.0, 2.0, valinit=1.0)
+        self.slider_ki = Slider(ax_ki, "Ki", 0.0, 2.0, valinit=0.0)
+        self.slider_kd = Slider(ax_kd, "Kd", 0.0, 2.0, valinit=0.0)
 
     def run(self):
         while True:
@@ -146,7 +153,8 @@ class MainControlLoop:
                     if current_position is not None:
                         self.current_position = current_position
                     else:
-                        print("Ball not detected!!! Using old value for now")
+                        if self.camera_debug:
+                            print("Ball not detected!!! Using old value for now")
                 else:
                     self.current_position = Point(0, 0)
 
@@ -163,9 +171,6 @@ class MainControlLoop:
 
                     self.ball_controller.set_gains(kp_x, ki_x, kd_x, kp_x, ki_x, kd_x)
 
-                # Get desired position from trajectory controller
-                # Get current position from CV controller (mocked out for now)
-                desired_position = Point(1.0, 2.0)
                 output_angles = self.ball_controller.run_control_loop(
                     desired_position, self.current_position
                 )
@@ -214,6 +219,8 @@ class MainControlLoop:
                 plt.pause(self.pause_period)
             else:
                 time.sleep(self.pause_period)
+            # print the current time
+            print(time.time())
 
 
 if __name__ == "__main__":
