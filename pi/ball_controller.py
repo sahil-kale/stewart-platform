@@ -52,6 +52,9 @@ class BallController:
         error_x = desired_position.x - current_position.x
         error_y = desired_position.y - current_position.y
 
+        # error for y is inverted
+        error_y = -error_y
+
         # Update X control
         output_x, self.integral_error_x, self.previous_error_x = self.update(
             error_x,
@@ -72,7 +75,7 @@ class BallController:
             self.kd_y,
         )
 
-        np.clip(output_x, -self.saturation_angle, self.saturation_angle)
-        np.clip(output_y, -self.saturation_angle, self.saturation_angle)
+        output_x = np.clip(output_x, -self.saturation_angle, self.saturation_angle)
+        output_y = np.clip(output_y, -self.saturation_angle, self.saturation_angle)
 
         return output_x, output_y
