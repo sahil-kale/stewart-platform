@@ -81,6 +81,8 @@ class KalmanFilter:
         S = self.H @ self.P @ self.H.T + self.R
         self.K = self.P @ self.H.T @ np.linalg.inv(S)
 
+        print(self.K)
+
         self.P = (np.eye(len(self.P)) - self.K @ self.H) @ self.P
 
         self.X = self.X + self.K @ Y  # Update value based on the new kalman gain
@@ -138,7 +140,7 @@ class KalmanFilter:
         self.noisy_positions_y.append(self.most_recent_measurement_y)
 
 
-def main(Q_val, R_val, dt_val):
+def main(K_val, Q_val, R_val, dt_val):
     current_dir = os.path.dirname(os.path.realpath(__file__))
     measured_points_file_path = os.path.join(current_dir, "measured_points.json")
     with open(measured_points_file_path, "r") as file:
@@ -147,14 +149,11 @@ def main(Q_val, R_val, dt_val):
     measured_points_x = data["x"]
     measured_points_y = data["y"]
 
-    kalman_filter = KalmanFilter(Q_val, R_val, dt_val)
+    kalman_filter = KalmanFilter(K_val, Q_val, R_val, dt_val)
 
     for i in range(len(measured_points_x)):
-        print(len(measured_points_x))
         noisy_x = measured_points_x[i]
         noisy_y = measured_points_y[i]
-
-        print(noisy_x)
 
         if (noisy_x is not None and noisy_y is not None):
             current_measurement = Point(noisy_x, noisy_y)
@@ -181,6 +180,10 @@ if __name__ == "__main__":
     parser = argparse.ArgumentParser(
         description="Run camera and Kalman filter with specified parameters."
     )
+
+    parser.add_argument(
+        "--K", type=float, default=1.0, help="Gain for the kalman filter"
+    )
     parser.add_argument(
         "--Q", type=float, default=0.01, help="Process noise covariance"
     )
@@ -192,4 +195,4 @@ if __name__ == "__main__":
     args = parser.parse_args()
 
     # Call main function with parsed arguments
-    main(args.Q, args.R, args.dt)
+    main(args.K, args.Q, args.R, args.dt)
