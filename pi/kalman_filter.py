@@ -21,6 +21,14 @@ class KalmanFilter:
         self.Q = np.eye(4) * 0.01  # Process noise covariance
         self.R = np.eye(2) * 5.0  # Measurement noise covariance
 
+        # Arrays for visualization of data
+        self.noisy_positions_x = []
+        self.noisy_positions_y = []
+        self.filtered_positions_x = []
+        self.filtered_positions_y = []
+        self.filtered_velocity_x = []
+        self.filtered_velocity_y = []
+
     def predict(self):
         self.X = (
             self.A @ self.X
@@ -47,6 +55,49 @@ class KalmanFilter:
         estimated_position = Point(self.X[0, 0], self.X[1, 0])
         estimated_velocity = Point(self.X[2, 0], self.X[3, 0])
         new_state = [estimated_position, estimated_velocity]
+
+        # Append history of states
+        self.noisy_positions_x.append(measured_point.x)
+        self.noisy_positions_y.append(measured_point.y)
+
+        self.filtered_positions_x.append(new_state[0].x)
+        self.filtered_positions_y.append(new_state[0].y)
+
+        self.filtered_velocity_x.append(new_state[1].x)
+        self.filtered_velocity_y.append(new_state[1].y)
+
         return (
             new_state  # Return the most recent state estimate as an array of two points
         )
+
+    def visualize_data(self):
+        plt.figure(figsize=(10, 6))
+
+        # Plot noisy measurements
+        plt.scatter(
+            self.noisy_positions_x,
+            self.noisy_positions_y,
+            color="red",
+            label="Noisy Data",
+            s=10,
+            alpha=0.5,
+        )
+
+        # Plot filtered estimates
+        plt.plot(
+            self.filtered_positions_x,
+            self.filtered_positions_y,
+            color="blue",
+            label="Filtered Position Data (Kalman)",
+            linewidth=2,
+        )
+
+        # Labeling
+        plt.title("Kalman Filter: Noisy vs. Filtered Position")
+        plt.xlabel("X Position")
+        plt.ylabel("Y Position")
+        plt.legend()
+        plt.grid(True)
+
+        # Show plot
+        plt.show()
