@@ -263,22 +263,42 @@ class Camera:
         return obj_coords_2d_point
 
 
-def main(Q_val, R_val, dt_val):
-    parser = argparse.ArgumentParser(
-        description="Run camera and Kalman filter with specified parameters."
-    )
-    parser.add_argument(
-        "--Q", type=float, default=0.01, help="Process noise covariance"
-    )
-    parser.add_argument(
-        "--R", type=float, default=5.0, help="Measurement noise covariance"
-    )
-    parser.add_argument("--dt", type=float, default=1.0, help="Time step interval")
+def main(Q_val, R_val, dt_val, camera_debug):
+    current_dir = os.path.dirname(os.path.realpath(__file__))
+    cv_params_file_path = os.path.join(current_dir, "pi/camera_params.json")
 
-    args = parser.parse_args()
+    with open(cv_params_file_path, "r") as file:
+        data = json.load(file)  # Load JSON data as a dictionary
 
-    # Call main function with parsed arguments
-    main(args.Q, args.R, args.dt)
+    # Create camera object
+    cv_system = Camera(data["u"], data["v"], "/dev/video0", debug=True)
+
+    # Load additional camera parameters
+    cv_system.load_camera_params("pi/camera_calibration_data.json")
+
+    # Create Kalman filter with specified Q, R, and dt
+    kalman_filter = KalmanFilter(Q=Q_val, R=R_val, dt=dt_val)
+
+    for i in range(1000):
+        current_measurement = cv_system.get_ball_coordinates()
+        print(f"Current position is: {current_measurement}")
+
+        filtered_state = kalman_filter.predict()
+
+        if current_measurement is not None:
+            filtered_state = kalman_filter.update(current_measurement)
+        else:
+            print("Ball not detected!!! Using old value for now")
+
+        current_position = filtered_state[0]
+        current_velocity = filtered_state[1]
+        current_acceleration = filtered_state[2]
+    else:
+        current_position = Point(0, 0)
+        current_velocity = Point(0, 0)
+        current_acceleration = Point(0, 0)
+
+    kalman_filter.visualize_data()
 
 
 if __name__ == "__main__":
