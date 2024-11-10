@@ -34,8 +34,8 @@ class Camera:
         self.OPEN_CV_DELAY = 100
         self.frameSize = (u, v)
         self.cameraMatrix = np.zeros((3, 3), dtype=np.float32)
-        self.lower_color = np.array([[0, 0, 255], [0, 0, 0], [0, 0, 0]])
-        self.upper_color = np.array([[255, 255, 255], [0, 0, 0], [0, 0, 0]])
+        self.lower_color = np.array([35, 50, 100], dtype=np.uint8)
+        self.upper_color = np.array([85, 255, 255], dtype=np.uint8)
 
         self.set_camera_brightness(25)
         self.set_camera_contrast(50)
@@ -165,7 +165,9 @@ class Camera:
             circular_mask, (center_x, center_y), self.ball_platform_radius_px, (255), -1
         )
 
-        mask = cv.inRange(hsv, self.lower_color[0], self.upper_color[0])
+        # Now use the HSV values in cv.inRange
+        mask = cv.inRange(hsv, self.lower_color, self.upper_color)
+
         # Combine the color mask with the circular mask
         combined_mask = cv.bitwise_and(mask, mask, mask=circular_mask)
         # Apply the combined mask to the original frame
@@ -178,7 +180,7 @@ class Camera:
 
         # Greyscale the mask to use with filters
         gray = cv.cvtColor(res, cv.COLOR_BGR2GRAY)
-        blurred = cv.GaussianBlur(gray, (9, 9), 0)  # noise reduction
+        blurred = cv.GaussianBlur(gray, (15, 15), 0)  # noise reduction
 
         circles = cv.HoughCircles(
             blurred,
@@ -187,7 +189,7 @@ class Camera:
             minDist=30,
             param1=50,
             param2=30,
-            minRadius=10,
+            minRadius=5,
             maxRadius=50,
         )
         # Draw detected circles on the original image
