@@ -116,12 +116,7 @@ class MainControlLoop:
             self.cv_system = Camera(data["u"], data["v"], camera_port, camera_debug)
             self.cv_system.load_camera_params("pi/camera_calibration_data.json")
 
-        kalman_filter_params_file_path = os.path.join(current_dir, "kalman_params.json")
-
-        with open(kalman_filter_params_file_path, "r") as file:
-            data = json.load(file)
-
-        self.kalman_filter = KalmanFilter(data["K"], data["dt"])
+        self.kalman_filter = KalmanFilter()  # Use default params for now
 
         self.current_position = Point(0, 0)
         self.current_velocity = Point(0, 0)

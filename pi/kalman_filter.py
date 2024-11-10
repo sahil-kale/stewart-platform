@@ -4,22 +4,31 @@ from point import Point
 
 
 class KalmanFilter:
-    def __init__(self, K, dt=1.0):
-        self.K = K  # Kalman gain
+    def __init__(self, K=1.0, Q=0.01, R=5.0, dt=1.0):
+        self.K = K  # Initial kalman gain
         self.dt = dt
         self.X = np.zeros(
-            (4, 1)
-        )  # [x, y, vx, vy]^T - current estimate of the ball state
-        self.P = np.eye(4) * 1000  # Large initial uncertainty
+            (6, 1)
+        )  # [x, y, vx, vy, ax, ay]^T - current estimate of the ball state
+        self.P = np.eye(6) * 1000  # Large initial uncertainty
 
         self.A = np.array(
-            [[1, 0, dt, 0], [0, 1, 0, dt], [0, 0, 1, 0], [0, 0, 0, 1]]
+            [
+                [1, 0, self.dt, 0, 0.5 * self.dt**2, 0],
+                [0, 1, 0, self.dt, 0, 0.5 * self.dt**2],
+                [0, 0, 1, 0, self.dt, 0],
+                [0, 0, 0, 1, 0, self.dt],
+                [0, 0, 0, 0, 1, 0],
+                [0, 0, 0, 0, 0, 1],
+            ]
         )  # Transition matrix to get state estimate given previous estimate
 
-        self.H = np.array([[1, 0, 0, 0], [0, 1, 0, 0]])  # Measurement matrix
+        self.H = np.array(
+            [[1, 0, 0, 0, 0, 0], [0, 1, 0, 0, 0, 0]]
+        )  # Measurement matrix
 
-        self.Q = np.eye(4) * 0.01  # Process noise covariance
-        self.R = np.eye(2) * 5.0  # Measurement noise covariance
+        self.Q = np.eye(6) * Q  # Process noise covariance
+        self.R = np.eye(2) * R  # Measurement noise covariance
 
         # Arrays for visualization of data
         self.noisy_positions_x = []
@@ -28,6 +37,8 @@ class KalmanFilter:
         self.filtered_positions_y = []
         self.filtered_velocity_x = []
         self.filtered_velocity_y = []
+        self.filtered_acceleration_x = []
+        self.filtered_acceleration_y = []
 
     def predict(self):
         self.X = (
@@ -40,7 +51,7 @@ class KalmanFilter:
     def update(self, measured_point):
         # Use the new measurements to update the prediction
 
-        Z = np.array([measured_point.x, measured_point.y]).reahape(2, 1)
+        Z = np.array([measured_point.x, measured_point.y]).reshape(2, 1)
 
         # Update error vector Y
         Y = Z - self.H @ self.X
@@ -48,6 +59,8 @@ class KalmanFilter:
         self.K = self.P @ self.H.T @ np.linalg.inv(S)
 
         self.P = (np.eye(len(self.P)) - self.K @ self.H) @ self.P
+
+        self.X = self.X + self.K @ Y  # Update value based on the new kalman gain
 
     def kalman_filter(self, measured_point):
         self.predict()
