@@ -76,8 +76,6 @@ class KalmanFilter:
             self.most_recent_measurement_x = measured_point.x
             self.most_recent_measurement_y = measured_point.y
         else:
-            self.most_recent_measurement_x = None
-            self.most_recent_measurement_y = None
             return
         Z = np.array([self.most_recent_measurement_x, self.most_recent_measurement_y]).reshape(2, 1)
 
