@@ -301,20 +301,16 @@ def main(Q_val, R_val, dt_val):
     kalman_filter.visualize_data()
 
     # Log all the data to a JSON
-    data = {
-        "x": kalman_filter.noisy_positions_x,
-        "y": kalman_filter.noisy_positions_y
-    }
+    data = {"x": kalman_filter.noisy_positions_x, "y": kalman_filter.noisy_positions_y}
 
     # Specify the file path
-    file_path = "measured_points.json"
+    measured_points_file_path = os.path.join(current_dir, "measured_points.json")
 
     # Write the data to the JSON file
-    with open(file_path, 'w') as f:
+    with open(measured_points_file_path, "w") as f:
         json.dump(data, f, indent=4)
 
-    print(f"Data logged to {file_path}")
-
+    print(f"Data logged to {measured_points_file_path}")
 
 
 if __name__ == "__main__":
