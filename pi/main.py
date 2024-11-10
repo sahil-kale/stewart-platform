@@ -120,6 +120,7 @@ class MainControlLoop:
 
         self.current_position = Point(0, 0)
         self.current_velocity = Point(0, 0)
+        self.current_acceleration = Point(0, 0)
 
         self.pause_period = 0.01
 
@@ -166,17 +167,25 @@ class MainControlLoop:
             desired_position = Point(0, 0)
             if self.run_controller:
                 if self.virtual is False:
-                    current_position = self.cv_system.get_ball_coordinates()
-                    print(f"Current position is: {current_position}")
+                    current_measurement = self.cv_system.get_ball_coordinates()
+                    print(f"Current position is: {current_measurement}")
 
-                    if current_position is not None:
-                        self.current_position = current_position
+                    filtered_state = self.kalman_filter.predict()
+
+                    if current_measurement is not None:
+                        filtered_state = self.kalman_filter.update(current_measurement)
                         camera_valid = True
                     else:
                         if self.camera_debug:
                             print("Ball not detected!!! Using old value for now")
+
+                    self.current_position = filtered_state[0]
+                    self.current_velocity = filtered_state[1]
+                    self.current_acceleration = filtered_state[2]
                 else:
                     self.current_position = Point(0, 0)
+                    self.current_velocity = Point(0, 0)
+                    self.current_acceleration = Point(0, 0)
 
                 output_angles = self.ball_controller.run_control_loop(
                     desired_position, self.current_position
