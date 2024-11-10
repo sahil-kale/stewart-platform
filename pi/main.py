@@ -10,6 +10,7 @@ from ball_controller import BallController
 import argparse
 import matplotlib.pyplot as plt
 from matplotlib.widgets import Slider
+from kalman_filter import KalmanFilter
 import time
 import json
 
@@ -93,17 +94,25 @@ class MainControlLoop:
         # get the current directory
         current_dir = os.path.dirname(os.path.realpath(__file__))
         # get the file camera.json with the current dir
-        file_path = os.path.join(current_dir, "camera_params.json")
+        cv_params_file_path = os.path.join(current_dir, "camera_params.json")
 
-        with open(file_path, "r") as file:
+        with open(cv_params_file_path, "r") as file:
             data = json.load(file)  # Load JSON data as a dictionary
 
         if self.virtual is False:
             self.cv_system = Camera(data["u"], data["v"], camera_port, camera_debug)
             self.cv_system.open_camera()
             self.cv_system.calibrate()
+        
+        kalman_filter_params_file_path = os.path.join(current_dir, "kalman_params.json")
 
+        with open(kalman_filter_params_file_path, "r") as file:
+            data = json.load(file)
+        
+        self.kalman_filter = KalmanFilter(data["K"], data["dt"])
+        
         self.current_position = Point(0, 0)
+        self.current_velocity = Point(0, 0)
 
         self.pause_period = 0.01
 
@@ -136,9 +145,10 @@ class MainControlLoop:
             # Get pitch, roll, and height from the sliders
             if self.run_controller:
                 if self.virtual is False:
-                    self.current_position = self.cv_system.get_ball_coordinates()
-                else:
-                    self.current_position = Point(0, 0)
+                    position_measurement = self.cv_system.get_ball_coordinates()
+                    
+                    self.current_position = position_measurement[0]
+                    self.current_velocity = position_measurement[1]
 
                 desired_position = Point(1, 1)
                 output_angles = self.ball_controller.run_control_loop(
