@@ -61,15 +61,6 @@ class KalmanFilter:
         estimated_acceleration = Point(self.X[4, 0], self.X[5, 0])
         new_state = [estimated_position, estimated_velocity, estimated_acceleration]
 
-        # self.filtered_positions_x.append(new_state[0].x)
-        # self.filtered_positions_y.append(new_state[0].y)
-
-        # self.filtered_velocity_x.append(new_state[1].x)
-        # self.filtered_velocity_y.append(new_state[1].y)
-
-        # self.filtered_acceleration_x.append(new_state[2].x)
-        # self.filtered_acceleration_y.append(new_state[2].y)
-
         return new_state
 
     def update(self, measured_point):
@@ -91,15 +82,6 @@ class KalmanFilter:
         estimated_acceleration = Point(self.X[4, 0], self.X[5, 0])
 
         self.new_state = [estimated_position, estimated_velocity, estimated_acceleration]
-
-        # self.filtered_positions_x.append(new_state[0].x)
-        # self.filtered_positions_y.append(new_state[0].y)
-
-        # self.filtered_velocity_x.append(new_state[1].x)
-        # self.filtered_velocity_y.append(new_state[1].y)
-
-        # self.filtered_acceleration_x.append(new_state[2].x)
-        # self.filtered_acceleration_y.append(new_state[2].y)
 
         return self.new_state
 
