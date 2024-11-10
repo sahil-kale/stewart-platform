@@ -8,6 +8,7 @@ from kalman_filter import KalmanFilter
 
 import os
 import argparse
+import time
 
 
 class Camera:
@@ -303,6 +304,7 @@ def main(Q_val, R_val, dt_val):
         current_position = filtered_state[0]
         current_velocity = filtered_state[1]
         current_acceleration = filtered_state[2]
+        time.sleep(0.05)
     else:
         current_position = Point(0, 0)
         current_velocity = Point(0, 0)
