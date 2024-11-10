@@ -115,13 +115,13 @@ class KalmanFilter:
         )
 
         # Plot filtered estimates
-        # plt.plot(
-        #     self.filtered_positions_x,
-        #     self.filtered_positions_y,
-        #     color="blue",
-        #     label="Filtered Position Data (Kalman)",
-        #     linewidth=2,
-        # )
+        plt.plot(
+            self.filtered_positions_x,
+            self.filtered_positions_y,
+            color="blue",
+            label="Filtered Position Data (Kalman)",
+            linewidth=2,
+        )
 
         # Labeling
         plt.title("Kalman Filter: Noisy vs. Filtered Position")
@@ -159,6 +159,8 @@ def main(Q_val, R_val, dt_val):
         filtered_state = kalman_filter.predict()
 
         filtered_state = kalman_filter.update(current_measurement)
+
+        kalman_filter.append_noisy_measurement()
 
     kalman_filter.visualize_data()
 
