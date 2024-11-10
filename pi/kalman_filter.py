@@ -154,12 +154,22 @@ def main(Q_val, R_val, dt_val):
         noisy_x = measured_points_x[i]
         noisy_y = measured_points_y[i]
 
-        current_measurement = Point(noisy_x, noisy_y)
+        print(noisy_x)
+
+        if (noisy_x is not None and noisy_y is not None):
+            current_measurement = Point(noisy_x, noisy_y)
+        else:
+            current_measurement = None
 
         filtered_state = kalman_filter.predict()
 
-        filtered_state = kalman_filter.update(current_measurement)
-
+        if current_measurement is not None:
+            filtered_state = kalman_filter.update(current_measurement)
+        else:
+            print("Ball not detected!!! Using old value for now")
+            kalman_filter.most_recent_measurement_x = None
+            kalman_filter.most_recent_measurement_y = None
+            
         kalman_filter.append_noisy_measurement()
 
     kalman_filter.visualize_data()
