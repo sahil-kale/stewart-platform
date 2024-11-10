@@ -1,6 +1,9 @@
 import numpy as np
 import matplotlib.pyplot as plt
 from point import Point
+import argparse
+import os
+import json
 
 
 class KalmanFilter:
@@ -111,13 +114,13 @@ class KalmanFilter:
         )
 
         # Plot filtered estimates
-        plt.plot(
-            self.filtered_positions_x,
-            self.filtered_positions_y,
-            color="blue",
-            label="Filtered Position Data (Kalman)",
-            linewidth=2,
-        )
+        # plt.plot(
+        #     self.filtered_positions_x,
+        #     self.filtered_positions_y,
+        #     color="blue",
+        #     label="Filtered Position Data (Kalman)",
+        #     linewidth=2,
+        # )
 
         # Labeling
         plt.title("Kalman Filter: Noisy vs. Filtered Position")
@@ -128,3 +131,46 @@ class KalmanFilter:
 
         # Show plot
         plt.show()
+
+def main(Q_val, R_val, dt_val):
+    current_dir = os.path.dirname(os.path.realpath(__file__))
+    measured_points_file_path = os.path.join(current_dir, "measured_points.json")
+    with open(measured_points_file_path, "r") as file:
+        data = json.load(file)  # Load JSON data as a dictionary
+    
+    measured_points_x = data["x"]
+    measured_points_y = data["y"]
+
+    kalman_filter = KalmanFilter(Q_val, R_val, dt_val)
+
+    for i in range(len(measured_points_x)):
+        noisy_x = measured_points_x[i]
+        noisy_y = measured_points_y[i]
+
+        current_measurement = Point(noisy_x, noisy_y)
+
+        filtered_state = kalman_filter.predict()
+
+        filtered_state = kalman_filter.update(current_measurement)
+
+    kalman_filter.visualize_data()
+
+
+
+if __name__ == "__main__":
+    # Set up argument parser
+    parser = argparse.ArgumentParser(
+        description="Run camera and Kalman filter with specified parameters."
+    )
+    parser.add_argument(
+        "--Q", type=float, default=0.01, help="Process noise covariance"
+    )
+    parser.add_argument(
+        "--R", type=float, default=5.0, help="Measurement noise covariance"
+    )
+    parser.add_argument("--dt", type=float, default=1.0, help="Time step interval")
+
+    args = parser.parse_args()
+
+    # Call main function with parsed arguments
+    main(args.Q, args.R, args.dt)
