@@ -281,7 +281,7 @@ if __name__ == "__main__":
 
     kalman_filter = KalmanFilter()  # Use default params for now
 
-    while True:
+    for i in range(1000):
         current_measurement = cv_system.get_ball_coordinates()
         print(f"Current position is: {current_measurement}")
 
@@ -292,3 +292,5 @@ if __name__ == "__main__":
             camera_valid = True
         else:
             print("Ball not detected!!! Using old value for now")
+
+    kalman_filter.visualize_data()
