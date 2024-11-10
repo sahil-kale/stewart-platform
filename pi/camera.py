@@ -141,9 +141,9 @@ class Camera:
         self.cameraMatrix = np.array(data["cameraMatrix"])
         self.dist = np.array(data["dist"])
 
-    def show_camera_feed(self):
+    # def show_camera_feed(self):
         # Show camera feed
-        while True:
+        # while True:
             # print(self.get_ball_coordinates())
 
     def get_ball_coordinates(self):
