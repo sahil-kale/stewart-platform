@@ -46,6 +46,8 @@ class KalmanFilter:
         self.most_recent_measurement_x = 0
         self.most_recent_measurement_y = 0
 
+        self.new_state = [Point(0, 0), Point(0, 0), Point(0,0)]
+
     def predict(self):
         self.X = (
             self.A @ self.X
@@ -59,14 +61,14 @@ class KalmanFilter:
         estimated_acceleration = Point(self.X[4, 0], self.X[5, 0])
         new_state = [estimated_position, estimated_velocity, estimated_acceleration]
 
-        self.filtered_positions_x.append(new_state[0].x)
-        self.filtered_positions_y.append(new_state[0].y)
+        # self.filtered_positions_x.append(new_state[0].x)
+        # self.filtered_positions_y.append(new_state[0].y)
 
-        self.filtered_velocity_x.append(new_state[1].x)
-        self.filtered_velocity_y.append(new_state[1].y)
+        # self.filtered_velocity_x.append(new_state[1].x)
+        # self.filtered_velocity_y.append(new_state[1].y)
 
-        self.filtered_acceleration_x.append(new_state[2].x)
-        self.filtered_acceleration_y.append(new_state[2].y)
+        # self.filtered_acceleration_x.append(new_state[2].x)
+        # self.filtered_acceleration_y.append(new_state[2].y)
 
         return new_state
 
@@ -88,18 +90,18 @@ class KalmanFilter:
         estimated_velocity = Point(self.X[2, 0], self.X[3, 0])
         estimated_acceleration = Point(self.X[4, 0], self.X[5, 0])
 
-        new_state = [estimated_position, estimated_velocity, estimated_acceleration]
+        self.new_state = [estimated_position, estimated_velocity, estimated_acceleration]
 
-        self.filtered_positions_x.append(new_state[0].x)
-        self.filtered_positions_y.append(new_state[0].y)
+        # self.filtered_positions_x.append(new_state[0].x)
+        # self.filtered_positions_y.append(new_state[0].y)
 
-        self.filtered_velocity_x.append(new_state[1].x)
-        self.filtered_velocity_y.append(new_state[1].y)
+        # self.filtered_velocity_x.append(new_state[1].x)
+        # self.filtered_velocity_y.append(new_state[1].y)
 
-        self.filtered_acceleration_x.append(new_state[2].x)
-        self.filtered_acceleration_y.append(new_state[2].y)
+        # self.filtered_acceleration_x.append(new_state[2].x)
+        # self.filtered_acceleration_y.append(new_state[2].y)
 
-        return new_state
+        return self.new_state
 
     def visualize_data(self):
         plt.figure(figsize=(10, 6))
@@ -137,6 +139,15 @@ class KalmanFilter:
         self.noisy_positions_x.append(self.most_recent_measurement_x)
         self.noisy_positions_y.append(self.most_recent_measurement_y)
 
+        self.filtered_positions_x.append(self.new_state[0].x)
+        self.filtered_positions_y.append(self.new_state[0].y)
+
+        self.filtered_velocity_x.append(self.new_state[1].x)
+        self.filtered_velocity_y.append(self.new_state[1].y)
+
+        self.filtered_acceleration_x.append(self.new_state[2].x)
+        self.filtered_acceleration_y.append(self.new_state[2].y)
+
 
 def main(K_val, Q_val, R_val, dt_val):
     current_dir = os.path.dirname(os.path.realpath(__file__))
@@ -149,15 +160,20 @@ def main(K_val, Q_val, R_val, dt_val):
 
     kalman_filter = KalmanFilter(K_val, Q_val, R_val, dt_val)
 
-    for i in range(100):
+    for i in range(500):
         noisy_x = measured_points_x[i]
         noisy_y = measured_points_y[i]
 
         if (noisy_x is not None and noisy_y is not None):
-            if (np.abs(noisy_x - kalman_filter.most_recent_measurement_x) < 0.02 and np.abs(noisy_y - kalman_filter.most_recent_measurement_y) < 0.02):
+            if (kalman_filter.most_recent_measurement_x is None or kalman_filter.most_recent_measurement_y is None):
                 current_measurement = Point(noisy_x, noisy_y)
+
+            elif (np.abs(noisy_x - kalman_filter.most_recent_measurement_x) < 0.02 and np.abs(noisy_y - kalman_filter.most_recent_measurement_y) < 0.02):
+                current_measurement = Point(noisy_x, noisy_y)
+            
             else:
-                current_measurement = None                
+                current_measurement = None
+            
         else:
             current_measurement = None
 
