@@ -283,7 +283,7 @@ def main(Q_val, R_val, dt_val):
     cv_system.load_camera_params("pi/camera_calibration_data.json")
 
     # Create Kalman filter with specified Q, R, and dt
-    kalman_filter = KalmanFilter(Q=Q_val, R=R_val, dt=dt_val)
+    kalman_filter = KalmanFilter(K=1.0, Q=Q_val, R=R_val, dt=dt_val)
         
     invalid_count = 0
     for i in range(500):
@@ -304,11 +304,6 @@ def main(Q_val, R_val, dt_val):
         current_position = filtered_state[0]
         current_velocity = filtered_state[1]
         current_acceleration = filtered_state[2]
-        time.sleep(0.05)
-    else:
-        current_position = Point(0, 0)
-        current_velocity = Point(0, 0)
-        current_acceleration = Point(0, 0)
 
     kalman_filter.visualize_data()
     

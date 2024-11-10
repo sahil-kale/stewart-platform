@@ -72,16 +72,19 @@ class KalmanFilter:
 
     def update(self, measured_point):
         # Use the new measurements to update the prediction
-        self.most_recent_measurement_x = measured_point.x
-        self.most_recent_measurement_y = measured_point.y
+        if ((np.abs(measured_point.x - self.most_recent_measurement_x) < 0.02) and (np.abs(measured_point.y - self.most_recent_measurement_y) < 0.02)):
+            self.most_recent_measurement_x = measured_point.x
+            self.most_recent_measurement_y = measured_point.y
+        else:
+            self.most_recent_measurement_x = None
+            self.most_recent_measurement_y = None
+            return
         Z = np.array([self.most_recent_measurement_x, self.most_recent_measurement_y]).reshape(2, 1)
 
         # Update error vector Y
         Y = Z - self.H @ self.X
         S = self.H @ self.P @ self.H.T + self.R
         self.K = self.P @ self.H.T @ np.linalg.inv(S)
-
-        print(self.K)
 
         self.P = (np.eye(len(self.P)) - self.K @ self.H) @ self.P
 
@@ -151,7 +154,7 @@ def main(K_val, Q_val, R_val, dt_val):
 
     kalman_filter = KalmanFilter(K_val, Q_val, R_val, dt_val)
 
-    for i in range(len(measured_points_x)):
+    for i in range(100):
         noisy_x = measured_points_x[i]
         noisy_y = measured_points_y[i]
 
