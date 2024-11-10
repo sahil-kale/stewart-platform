@@ -208,6 +208,7 @@ class MainControlLoop:
             # Update visualization if enabled
             if self.run_visualizer:
                 self.visualizer.update(platform_points_in_base_frame, servo_angles)
+                self.kalman_filter.visualize_data()
                 # Redraw the figure
                 plt.pause(self.pause_period)
             elif self.tune_controller:
