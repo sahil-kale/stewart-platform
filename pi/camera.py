@@ -4,6 +4,9 @@ import glob
 from point import Point
 import json
 import subprocess
+from kalman_filter import KalmanFilter
+
+import os
 
 
 class Camera:
@@ -264,8 +267,26 @@ if __name__ == "__main__":
     with open("pi/camera_params.json") as f:
         data = json.load(f)
 
+    current_dir = os.path.dirname(os.path.realpath(__file__))
+        # get the file camera.json with the current dir
+    cv_params_file_path = os.path.join(current_dir, "camera_params.json")
+
+    with open(cv_params_file_path, "r") as file:
+        data = json.load(file)  # Load JSON data as a dictionary
+
     # Create camera object
-    cam = Camera(data["u"], data["v"], "/dev/video0", debug=True)
-    print(cam.u, cam.v, cam.port)
-    cam.calibrate_cam_from_images()
-    cam.show_camera_feed()
+    cv_system = Camera(data["u"], data["v"], "/dev/video0", debug=True)
+
+    kalman_filter = KalmanFilter()  # Use default params for now
+    
+    while True:
+        current_measurement = cv_system.get_ball_coordinates()
+        print(f"Current position is: {current_measurement}")
+
+        filtered_state = kalman_filter.predict()
+
+        if current_measurement is not None:
+            filtered_state = kalman_filter.update(current_measurement)
+            camera_valid = True
+        else:
+            print("Ball not detected!!! Using old value for now")
