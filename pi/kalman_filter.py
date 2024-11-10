@@ -50,7 +50,8 @@ class KalmanFilter:
 
         estimated_position = Point(self.X[0, 0], self.X[1, 0])
         estimated_velocity = Point(self.X[2, 0], self.X[3, 0])
-        new_state = [estimated_position, estimated_velocity]
+        estimated_acceleration = Point(self.X[4, 0], self.X[5, 0])
+        new_state = [estimated_position, estimated_velocity, estimated_acceleration]
 
         self.filtered_positions_x.append(new_state[0].x)
         self.filtered_positions_y.append(new_state[0].y)
@@ -78,8 +79,9 @@ class KalmanFilter:
         self.X = self.X + self.K @ Y  # Update value based on the new kalman gain
         estimated_position = Point(self.X[0, 0], self.X[1, 0])
         estimated_velocity = Point(self.X[2, 0], self.X[3, 0])
+        estimated_acceleration = Point(self.X[4, 0], self.X[5, 0])
 
-        new_state = [estimated_position, estimated_velocity]
+        new_state = [estimated_position, estimated_velocity, estimated_acceleration]
 
         self.noisy_positions_x.append(measured_point.x)
         self.noisy_positions_y.append(measured_point.y)
