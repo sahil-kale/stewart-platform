@@ -174,6 +174,11 @@ class Camera:
 
         # Combine the color mask with the circular mask
         combined_mask = cv.bitwise_and(mask, mask, mask=circular_mask)
+
+        # Apply a morphological mask
+        kernel = np.ones((5,5), np.uint8)
+        combined_mask = cv.morphologyEx(combined_mask, cv.MORPH_OPEN, kernel)
+        combined_mask = cv.morphologyEx(combined_mask, cv.MORPH_CLOSE, kernel)
         # Apply the combined mask to the original frame
         res = cv.bitwise_and(frame, frame, mask=combined_mask)
 
