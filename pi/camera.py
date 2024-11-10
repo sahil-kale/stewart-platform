@@ -289,7 +289,8 @@ def main(Q_val, R_val, dt_val):
             filtered_state = kalman_filter.update(current_measurement)
         else:
             print("Ball not detected!!! Using old value for now")
-
+            kalman_filter.most_recent_measurement_x = None
+            kalman_filter.most_recent_measurement_y = None
         kalman_filter.append_noisy_measurement()
 
         current_position = filtered_state[0]
