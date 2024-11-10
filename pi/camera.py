@@ -9,6 +9,7 @@ from kalman_filter import KalmanFilter
 import os
 import argparse
 
+
 class Camera:
     def __init__(self, u, v, port, debug=False):
         self.debug = debug
@@ -142,9 +143,9 @@ class Camera:
         self.dist = np.array(data["dist"])
 
     # def show_camera_feed(self):
-        # Show camera feed
-        # while True:
-            # print(self.get_ball_coordinates())
+    # Show camera feed
+    # while True:
+    # print(self.get_ball_coordinates())
 
     def get_ball_coordinates(self):
         # Get the coordinates of the ball
@@ -261,10 +262,17 @@ class Camera:
 
         return obj_coords_2d_point
 
+
 def main(Q_val, R_val, dt_val):
-    parser = argparse.ArgumentParser(description="Run camera and Kalman filter with specified parameters.")
-    parser.add_argument("--Q", type=float, default=0.01, help="Process noise covariance")
-    parser.add_argument("--R", type=float, default=5.0, help="Measurement noise covariance")
+    parser = argparse.ArgumentParser(
+        description="Run camera and Kalman filter with specified parameters."
+    )
+    parser.add_argument(
+        "--Q", type=float, default=0.01, help="Process noise covariance"
+    )
+    parser.add_argument(
+        "--R", type=float, default=5.0, help="Measurement noise covariance"
+    )
     parser.add_argument("--dt", type=float, default=1.0, help="Time step interval")
 
     args = parser.parse_args()
@@ -272,11 +280,18 @@ def main(Q_val, R_val, dt_val):
     # Call main function with parsed arguments
     main(args.Q, args.R, args.dt)
 
+
 if __name__ == "__main__":
     # Set up argument parser
-    parser = argparse.ArgumentParser(description="Run camera and Kalman filter with specified parameters.")
-    parser.add_argument("--Q", type=float, default=0.01, help="Process noise covariance")
-    parser.add_argument("--R", type=float, default=5.0, help="Measurement noise covariance")
+    parser = argparse.ArgumentParser(
+        description="Run camera and Kalman filter with specified parameters."
+    )
+    parser.add_argument(
+        "--Q", type=float, default=0.01, help="Process noise covariance"
+    )
+    parser.add_argument(
+        "--R", type=float, default=5.0, help="Measurement noise covariance"
+    )
     parser.add_argument("--dt", type=float, default=1.0, help="Time step interval")
 
     args = parser.parse_args()
