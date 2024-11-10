@@ -7,7 +7,7 @@ import subprocess
 from kalman_filter import KalmanFilter
 
 import os
-
+import argparse
 
 class Camera:
     def __init__(self, u, v, port, debug=False):
@@ -261,36 +261,25 @@ class Camera:
 
         return obj_coords_2d_point
 
+def main(Q_val, R_val, dt_val):
+    parser = argparse.ArgumentParser(description="Run camera and Kalman filter with specified parameters.")
+    parser.add_argument("--Q", type=float, default=0.01, help="Process noise covariance")
+    parser.add_argument("--R", type=float, default=5.0, help="Measurement noise covariance")
+    parser.add_argument("--dt", type=float, default=1.0, help="Time step interval")
+
+    args = parser.parse_args()
+
+    # Call main function with parsed arguments
+    main(args.Q, args.R, args.dt)
 
 if __name__ == "__main__":
-    # from pi/camera_params.json get the data
-    with open("pi/camera_params.json") as f:
-        data = json.load(f)
+    # Set up argument parser
+    parser = argparse.ArgumentParser(description="Run camera and Kalman filter with specified parameters.")
+    parser.add_argument("--Q", type=float, default=0.01, help="Process noise covariance")
+    parser.add_argument("--R", type=float, default=5.0, help="Measurement noise covariance")
+    parser.add_argument("--dt", type=float, default=1.0, help="Time step interval")
 
-    current_dir = os.path.dirname(os.path.realpath(__file__))
-    # get the file camera.json with the current dir
-    cv_params_file_path = os.path.join(current_dir, "camera_params.json")
+    args = parser.parse_args()
 
-    with open(cv_params_file_path, "r") as file:
-        data = json.load(file)  # Load JSON data as a dictionary
-
-    # Create camera object
-    cv_system = Camera(data["u"], data["v"], "/dev/video0", debug=True)
-
-    cv_system.load_camera_params("pi/camera_calibration_data.json")
-
-    kalman_filter = KalmanFilter()  # Use default params for now
-
-    for i in range(1000):
-        current_measurement = cv_system.get_ball_coordinates()
-        # print(f"Current position is: {current_measurement}")
-
-        filtered_state = kalman_filter.predict()
-
-        if current_measurement is not None:
-            filtered_state = kalman_filter.update(current_measurement)
-            camera_valid = True
-        else:
-            print("Ball not detected!!! Using old value for now")
-
-    kalman_filter.visualize_data()
+    # Call main function with parsed arguments
+    main(args.Q, args.R, args.dt)
