@@ -279,7 +279,7 @@ def main(Q_val, R_val, dt_val):
     # Create Kalman filter with specified Q, R, and dt
     kalman_filter = KalmanFilter(Q=Q_val, R=R_val, dt=dt_val)
 
-    for i in range(1000):
+    for i in range(100):
         current_measurement = cv_system.get_ball_coordinates()
         print(f"Current position is: {current_measurement}")
 
@@ -289,6 +289,8 @@ def main(Q_val, R_val, dt_val):
             filtered_state = kalman_filter.update(current_measurement)
         else:
             print("Ball not detected!!! Using old value for now")
+
+        kalman_filter.append_noisy_measurement()
 
         current_position = filtered_state[0]
         current_velocity = filtered_state[1]
