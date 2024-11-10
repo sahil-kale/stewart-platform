@@ -265,7 +265,7 @@ class Camera:
 
 def main(Q_val, R_val, dt_val):
     current_dir = os.path.dirname(os.path.realpath(__file__))
-    cv_params_file_path = os.path.join(current_dir, "pi/camera_params.json")
+    cv_params_file_path = os.path.join(current_dir, "camera_params.json")
 
     with open(cv_params_file_path, "r") as file:
         data = json.load(file)  # Load JSON data as a dictionary
