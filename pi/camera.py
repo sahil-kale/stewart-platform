@@ -279,7 +279,7 @@ def main(Q_val, R_val, dt_val):
     # Create Kalman filter with specified Q, R, and dt
     kalman_filter = KalmanFilter(Q=Q_val, R=R_val, dt=dt_val)
 
-    for i in range(100):
+    for i in range(1000):
         current_measurement = cv_system.get_ball_coordinates()
         print(f"Current position is: {current_measurement}")
 
