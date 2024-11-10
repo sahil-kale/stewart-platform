@@ -43,6 +43,9 @@ class KalmanFilter:
         self.filtered_acceleration_x = []
         self.filtered_acceleration_y = []
 
+        self.most_recent_measurement_x = 0
+        self.most_recent_measurement_y = 0
+
     def predict(self):
         self.X = (
             self.A @ self.X
@@ -69,8 +72,9 @@ class KalmanFilter:
 
     def update(self, measured_point):
         # Use the new measurements to update the prediction
-
-        Z = np.array([measured_point.x, measured_point.y]).reshape(2, 1)
+        self.most_recent_measurement_x = measured_point.x
+        self.most_recent_measurement_y = measured_point.y
+        Z = np.array([self.most_recent_measurement_x, self.most_recent_measurement_y]).reshape(2, 1)
 
         # Update error vector Y
         Y = Z - self.H @ self.X
@@ -85,9 +89,6 @@ class KalmanFilter:
         estimated_acceleration = Point(self.X[4, 0], self.X[5, 0])
 
         new_state = [estimated_position, estimated_velocity, estimated_acceleration]
-
-        self.noisy_positions_x.append(measured_point.x)
-        self.noisy_positions_y.append(measured_point.y)
 
         self.filtered_positions_x.append(new_state[0].x)
         self.filtered_positions_y.append(new_state[0].y)
@@ -132,6 +133,11 @@ class KalmanFilter:
         # Show plot
         plt.show()
 
+    def append_noisy_measurement(self):
+        self.noisy_positions_x.append(self.most_recent_measurement_x)
+        self.noisy_positions_y.append(self.most_recent_measurement_y)
+
+
 def main(Q_val, R_val, dt_val):
     current_dir = os.path.dirname(os.path.realpath(__file__))
     measured_points_file_path = os.path.join(current_dir, "measured_points.json")
@@ -144,6 +150,7 @@ def main(Q_val, R_val, dt_val):
     kalman_filter = KalmanFilter(Q_val, R_val, dt_val)
 
     for i in range(len(measured_points_x)):
+        print(len(measured_points_x))
         noisy_x = measured_points_x[i]
         noisy_y = measured_points_y[i]
 

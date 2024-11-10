@@ -169,6 +169,7 @@ class MainControlLoop:
                 if self.virtual is False:
                     current_measurement = self.cv_system.get_ball_coordinates()
                     print(f"Current position is: {current_measurement}")
+                    current_measurement
 
                     filtered_state = self.kalman_filter.predict()
 
@@ -178,6 +179,8 @@ class MainControlLoop:
                     else:
                         if self.camera_debug:
                             print("Ball not detected!!! Using old value for now")
+
+                    self.kalman_filter.append_noisy_measurement()
 
                     self.current_position = filtered_state[0]
                     self.current_velocity = filtered_state[1]
