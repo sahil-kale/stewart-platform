@@ -263,7 +263,7 @@ class Camera:
         return obj_coords_2d_point
 
 
-def main(Q_val, R_val, dt_val, camera_debug):
+def main(Q_val, R_val, dt_val):
     current_dir = os.path.dirname(os.path.realpath(__file__))
     cv_params_file_path = os.path.join(current_dir, "pi/camera_params.json")
 
