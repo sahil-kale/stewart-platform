@@ -23,7 +23,7 @@ class Camera:
         )  # height of the camera from the ground in meters
 
         # Used to a mask where we reject any input that is not within the circular platform
-        self.ball_platform_radius_px = 200
+        self.ball_platform_radius_px = 150
 
         # Set camera object and port
         self.port = port
@@ -176,7 +176,7 @@ class Camera:
         combined_mask = cv.bitwise_and(mask, mask, mask=circular_mask)
 
         # Apply a morphological mask
-        kernel = np.ones((5,5), np.uint8)
+        kernel = np.ones((3, 3), np.uint8)
         combined_mask = cv.morphologyEx(combined_mask, cv.MORPH_OPEN, kernel)
         combined_mask = cv.morphologyEx(combined_mask, cv.MORPH_CLOSE, kernel)
         # Apply the combined mask to the original frame
@@ -197,7 +197,7 @@ class Camera:
             dp=1.2,
             minDist=30,
             param1=50,
-            param2=30,
+            param2=25,
             minRadius=5,
             maxRadius=50,
         )
@@ -283,7 +283,8 @@ def main(Q_val, R_val, dt_val):
 
     # Create Kalman filter with specified Q, R, and dt
     kalman_filter = KalmanFilter(Q=Q_val, R=R_val, dt=dt_val)
-
+        
+    invalid_count = 0
     for i in range(500):
         current_measurement = cv_system.get_ball_coordinates()
         print(f"Current position is: {current_measurement}")
@@ -296,6 +297,7 @@ def main(Q_val, R_val, dt_val):
             print("Ball not detected!!! Using old value for now")
             kalman_filter.most_recent_measurement_x = None
             kalman_filter.most_recent_measurement_y = None
+            invalid_count = invalid_count + 1
         kalman_filter.append_noisy_measurement()
 
         current_position = filtered_state[0]
@@ -307,6 +309,8 @@ def main(Q_val, R_val, dt_val):
         current_acceleration = Point(0, 0)
 
     kalman_filter.visualize_data()
+    
+    print("INVALID COUNT: {}".format(invalid_count))
 
     # Log all the data to a JSON
     data = {"x": kalman_filter.noisy_positions_x, "y": kalman_filter.noisy_positions_y}
