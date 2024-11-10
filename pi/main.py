@@ -2,7 +2,7 @@ import numpy as np
 from platform_controller import PlatformController
 from platform_kinematics_module import PlatformKinematicsModule
 from camera import Camera
-from point import Point
+from point import Point, lpf_point
 from servo_kinematics_module import ServoKinematicsModule
 from servo_kinematics_feeder import ServoKinematicsFeeder
 from kinematics_3d_plotter import Kinematics3dPlotter
@@ -64,9 +64,9 @@ class MainControlLoop:
         self.pk = PlatformKinematicsModule(self.attachment_points)
         self.sk = ServoKinematicsModule(self.params["lh"], self.params["la"])
 
-        kp = 1.2
+        kp = 30
         ki = 0.0
-        kd = 0.02
+        kd = 0
         self.ball_controller = BallController(
             kp,
             ki,
@@ -142,24 +142,36 @@ class MainControlLoop:
         self.slider_kd = Slider(ax_kd, "Kd", 0.0, 2.0, valinit=0.0)
 
     def run(self):
+        # create a new log file path for the current run with the current time
+        # make a new directory "logs" if it doesn't exist
+        if not os.path.exists("logs"):
+            os.makedirs("logs")
+
+        logfile = f"logs/log_{time.strftime('%Y-%m-%d_%H-%M-%S')}.txt"
+
+        # open the log file in write mode
+        f = open(logfile, "w")
+        header_written = False
+
         while True:
             # Get pitch, roll, and height from the sliders
             time_since_start = time.time()
+            camera_valid = False
+            desired_position = Point(0, 0)
             if self.run_controller:
                 if self.virtual is False:
                     current_position = self.cv_system.get_ball_coordinates()
-                    if self.camera_debug:
-                        print(f"Current position is: {current_position}")
+                    print(f"Current position is: {current_position}")
 
                     if current_position is not None:
                         self.current_position = current_position
+                        camera_valid = True
                     else:
                         if self.camera_debug:
                             print("Ball not detected!!! Using old value for now")
                 else:
                     self.current_position = Point(0, 0)
 
-                desired_position = Point(0, 0)
                 output_angles = self.ball_controller.run_control_loop(
                     desired_position, self.current_position
                 )
@@ -176,6 +188,10 @@ class MainControlLoop:
                 roll_rad = output_angles[1]
                 height = 0.060  # default height
             else:
+                # set the pitch and roll sliders to negative whatever it was before
+                # self.slider_pitch.set_val(-self.slider_pitch.val)
+                # self.slider_roll.set_val(-self.slider_roll.val)
+
                 pitch_rad = np.deg2rad(self.slider_pitch.val)
                 roll_rad = np.deg2rad(self.slider_roll.val)
                 height = self.slider_height.val
@@ -206,6 +222,34 @@ class MainControlLoop:
                 self.pc.write_duty_cycles(
                     duty_cycles[0], duty_cycles[1], duty_cycles[2]
                 )
+
+            # log the following data to the log file
+            # time, current position, camera valid, desired position, pitch, roll, height, servo angles, duty cycles
+            # ensure that all data is separated by commas and are converted to strictly numbers
+            if not header_written:
+                f.write(
+                    "time,current_position_x,current_position_y,camera_valid,desired_position_x,desired_position_y,pitch,roll,height,servo_angle_1,servo_angle_2,servo_angle_3,duty_cycle_1,duty_cycle_2,duty_cycle_3\n"
+                )
+                header_written = True
+
+            # write the data to the log file - cast all number values to float
+            f.write(
+                f"{float(time_since_start)},"
+                f"{float(self.current_position.x)},"
+                f"{float(self.current_position.y)},"
+                f"{float(camera_valid)},"
+                f"{float(desired_position.x)},"
+                f"{float(desired_position.y)},"
+                f"{float(pitch_rad)},"
+                f"{float(roll_rad)},"
+                f"{float(height)},"
+                f"{float(servo_angles[0][0])},"
+                f"{float(servo_angles[1][0])},"
+                f"{float(servo_angles[2][0])},"
+                f"{float(duty_cycles[0])},"
+                f"{float(duty_cycles[1])},"
+                f"{float(duty_cycles[2])}\n"
+            )
 
             time_elapsed = time.time() - time_since_start
             pause_time = self.pause_period - time_elapsed
