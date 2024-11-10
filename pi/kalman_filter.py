@@ -44,7 +44,9 @@ class KalmanFilter:
     def kalman_filter(self, measured_point):
         self.predict()
         self.update(measured_point)
-        estimated_position = Point(self.X[0,0], self.X[1,0])
-        estimated_velocity = Point(self.X[2,0], self.X[3,0])
+        estimated_position = Point(self.X[0, 0], self.X[1, 0])
+        estimated_velocity = Point(self.X[2, 0], self.X[3, 0])
         new_state = [estimated_position, estimated_velocity]
-        return new_state  # Return the most recent state estimate as an array of two points
+        return (
+            new_state  # Return the most recent state estimate as an array of two points
+        )

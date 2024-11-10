@@ -103,14 +103,14 @@ class MainControlLoop:
             self.cv_system = Camera(data["u"], data["v"], camera_port, camera_debug)
             self.cv_system.open_camera()
             self.cv_system.calibrate()
-        
+
         kalman_filter_params_file_path = os.path.join(current_dir, "kalman_params.json")
 
         with open(kalman_filter_params_file_path, "r") as file:
             data = json.load(file)
-        
+
         self.kalman_filter = KalmanFilter(data["K"], data["dt"])
-        
+
         self.current_position = Point(0, 0)
         self.current_velocity = Point(0, 0)
 
@@ -146,7 +146,7 @@ class MainControlLoop:
             if self.run_controller:
                 if self.virtual is False:
                     position_measurement = self.cv_system.get_ball_coordinates()
-                    
+
                     self.current_position = position_measurement[0]
                     self.current_velocity = position_measurement[1]
 
