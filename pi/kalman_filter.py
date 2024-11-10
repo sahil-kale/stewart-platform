@@ -7,8 +7,8 @@ import json
 
 
 class KalmanFilter:
-    def __init__(self, K=1.0, Q=0.01, R=5.0, dt=1.0):
-        self.K = K  # Initial kalman gain
+    def __init__(self, Q=0.01, R=5.0, dt=0.05, outlier_threshold=0.2):
+        self.K = 1.0  # Initial kalman gain
         self.dt = dt
         self.X = np.zeros(
             (6, 1)
@@ -131,7 +131,7 @@ class KalmanFilter:
         self.filtered_acceleration_y.append(self.new_state[2].y)
 
 
-def main(K_val, Q_val, R_val, dt_val):
+def main(Q_val, R_val, dt_val):
     current_dir = os.path.dirname(os.path.realpath(__file__))
     measured_points_file_path = os.path.join(current_dir, "measured_points.json")
     with open(measured_points_file_path, "r") as file:
@@ -140,7 +140,7 @@ def main(K_val, Q_val, R_val, dt_val):
     measured_points_x = data["x"]
     measured_points_y = data["y"]
 
-    kalman_filter = KalmanFilter(K_val, Q_val, R_val, dt_val)
+    kalman_filter = KalmanFilter(Q_val, R_val, dt_val)
 
     for i in range(500):
         noisy_x = measured_points_x[i]
@@ -181,9 +181,6 @@ if __name__ == "__main__":
     )
 
     parser.add_argument(
-        "--K", type=float, default=1.0, help="Gain for the kalman filter"
-    )
-    parser.add_argument(
         "--Q", type=float, default=0.01, help="Process noise covariance"
     )
     parser.add_argument(
@@ -194,4 +191,4 @@ if __name__ == "__main__":
     args = parser.parse_args()
 
     # Call main function with parsed arguments
-    main(args.K, args.Q, args.R, args.dt)
+    main(args.Q, args.R, args.dt)
