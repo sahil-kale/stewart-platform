@@ -268,7 +268,7 @@ if __name__ == "__main__":
         data = json.load(f)
 
     current_dir = os.path.dirname(os.path.realpath(__file__))
-        # get the file camera.json with the current dir
+    # get the file camera.json with the current dir
     cv_params_file_path = os.path.join(current_dir, "camera_params.json")
 
     with open(cv_params_file_path, "r") as file:
@@ -277,8 +277,10 @@ if __name__ == "__main__":
     # Create camera object
     cv_system = Camera(data["u"], data["v"], "/dev/video0", debug=True)
 
+    cv_system.load_camera_params("pi/camera_calibration_data.json")
+
     kalman_filter = KalmanFilter()  # Use default params for now
-    
+
     while True:
         current_measurement = cv_system.get_ball_coordinates()
         print(f"Current position is: {current_measurement}")
