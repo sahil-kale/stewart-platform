@@ -2,7 +2,7 @@ import numpy as np
 from platform_controller import PlatformController
 from platform_kinematics_module import PlatformKinematicsModule
 from camera import Camera
-from point import Point
+from point import Point, lpf_point
 from servo_kinematics_module import ServoKinematicsModule
 from servo_kinematics_feeder import ServoKinematicsFeeder
 from kinematics_3d_plotter import Kinematics3dPlotter
@@ -34,9 +34,11 @@ class MainControlLoop:
         run_visualizer: bool = False,
         run_controller: bool = True,
         tune_controller: bool = False,
+        cam_color_mask_detect: bool = False,
+        cam_calibration_images: bool = False,
     ):
-        self.pause_period = 0.01
-        self.saturate_angle = 14.0
+        self.pause_period = 0.05
+        self.saturate_angle = 14
         self.params = {
             "lh": 41 / 1000,
             "la": 51 / 1000,
@@ -63,9 +65,18 @@ class MainControlLoop:
         self.pk = PlatformKinematicsModule(self.attachment_points)
         self.sk = ServoKinematicsModule(self.params["lh"], self.params["la"])
 
-        # The gains are just set arbitrarily for now
+        kp = 30
+        ki = 0.0
+        kd = 0
         self.ball_controller = BallController(
-            1.0, 1.0, 1.0, 1.0, 1.0, 1.0, self.pause_period, self.saturate_angle
+            kp,
+            ki,
+            kd,
+            kp,
+            ki,
+            kd,
+            self.pause_period,
+            np.deg2rad(self.saturate_angle),
         )
 
         self.run_visualizer = run_visualizer
@@ -96,13 +107,14 @@ class MainControlLoop:
         # get the file camera.json with the current dir
         cv_params_file_path = os.path.join(current_dir, "camera_params.json")
 
+        self.camera_debug = camera_debug
+
         with open(cv_params_file_path, "r") as file:
             data = json.load(file)  # Load JSON data as a dictionary
 
-        if self.virtual is False:
+        if self.virtual is not True:
             self.cv_system = Camera(data["u"], data["v"], camera_port, camera_debug)
-            self.cv_system.open_camera()
-            self.cv_system.calibrate()
+            self.cv_system.load_camera_params("pi/camera_calibration_data.json")
 
         kalman_filter_params_file_path = os.path.join(current_dir, "kalman_params.json")
 
@@ -136,21 +148,41 @@ class MainControlLoop:
         ax_ki = plt.axes([0.15, 0.30, 0.65, 0.03], facecolor="lightgoldenrodyellow")
         ax_kd = plt.axes([0.15, 0.35, 0.65, 0.03], facecolor="lightgoldenrodyellow")
 
-        self.slider_kp = Slider(ax_kp, "Kp", 0.0, 5.0, valinit=1.0)
-        self.slider_ki = Slider(ax_ki, "Ki", 0.0, 5.0, valinit=1.0)
-        self.slider_kd = Slider(ax_kd, "Kd", 0.0, 5.0, valinit=1.0)
+        self.slider_kp = Slider(ax_kp, "Kp", 0.0, 2.0, valinit=1.0)
+        self.slider_ki = Slider(ax_ki, "Ki", 0.0, 2.0, valinit=0.0)
+        self.slider_kd = Slider(ax_kd, "Kd", 0.0, 2.0, valinit=0.0)
 
     def run(self):
+        # create a new log file path for the current run with the current time
+        # make a new directory "logs" if it doesn't exist
+        if not os.path.exists("logs"):
+            os.makedirs("logs")
+
+        logfile = f"logs/log_{time.strftime('%Y-%m-%d_%H-%M-%S')}.txt"
+
+        # open the log file in write mode
+        f = open(logfile, "w")
+        header_written = False
+
         while True:
             # Get pitch, roll, and height from the sliders
+            time_since_start = time.time()
+            camera_valid = False
+            desired_position = Point(0, 0)
             if self.run_controller:
                 if self.virtual is False:
-                    position_measurement = self.cv_system.get_ball_coordinates()
+                    current_position = self.cv_system.get_ball_coordinates()
+                    print(f"Current position is: {current_position}")
 
-                    self.current_position = position_measurement[0]
-                    self.current_velocity = position_measurement[1]
+                    if current_position is not None:
+                        self.current_position = current_position
+                        camera_valid = True
+                    else:
+                        if self.camera_debug:
+                            print("Ball not detected!!! Using old value for now")
+                else:
+                    self.current_position = Point(0, 0)
 
-                desired_position = Point(1, 1)
                 output_angles = self.ball_controller.run_control_loop(
                     desired_position, self.current_position
                 )
@@ -163,17 +195,14 @@ class MainControlLoop:
 
                     self.ball_controller.set_gains(kp_x, ki_x, kd_x, kp_x, ki_x, kd_x)
 
-                # Get desired position from trajectory controller
-                # Get current position from CV controller (mocked out for now)
-                desired_position = Point(1.0, 2.0)
-                output_angles = self.ball_controller.run_control_loop(
-                    desired_position, self.current_position
-                )
-
                 pitch_rad = output_angles[0]
                 roll_rad = output_angles[1]
                 height = 0.060  # default height
             else:
+                # set the pitch and roll sliders to negative whatever it was before
+                # self.slider_pitch.set_val(-self.slider_pitch.val)
+                # self.slider_roll.set_val(-self.slider_roll.val)
+
                 pitch_rad = np.deg2rad(self.slider_pitch.val)
                 roll_rad = np.deg2rad(self.slider_roll.val)
                 height = self.slider_height.val
@@ -205,16 +234,51 @@ class MainControlLoop:
                     duty_cycles[0], duty_cycles[1], duty_cycles[2]
                 )
 
+            # log the following data to the log file
+            # time, current position, camera valid, desired position, pitch, roll, height, servo angles, duty cycles
+            # ensure that all data is separated by commas and are converted to strictly numbers
+            if not header_written:
+                f.write(
+                    "time,current_position_x,current_position_y,camera_valid,desired_position_x,desired_position_y,pitch,roll,height,servo_angle_1,servo_angle_2,servo_angle_3,duty_cycle_1,duty_cycle_2,duty_cycle_3\n"
+                )
+                header_written = True
+
+            # write the data to the log file - cast all number values to float
+            f.write(
+                f"{float(time_since_start)},"
+                f"{float(self.current_position.x)},"
+                f"{float(self.current_position.y)},"
+                f"{float(camera_valid)},"
+                f"{float(desired_position.x)},"
+                f"{float(desired_position.y)},"
+                f"{float(pitch_rad)},"
+                f"{float(roll_rad)},"
+                f"{float(height)},"
+                f"{float(servo_angles[0][0])},"
+                f"{float(servo_angles[1][0])},"
+                f"{float(servo_angles[2][0])},"
+                f"{float(duty_cycles[0])},"
+                f"{float(duty_cycles[1])},"
+                f"{float(duty_cycles[2])}\n"
+            )
+
+            time_elapsed = time.time() - time_since_start
+            pause_time = self.pause_period - time_elapsed
+            if pause_time < 0:
+                print(
+                    f"Loop is taking too long to run! {time_elapsed} seconds, {pause_time} seconds"
+                )
+                pause_time = 0
             # Update visualization if enabled
             if self.run_visualizer:
                 self.visualizer.update(platform_points_in_base_frame, servo_angles)
                 self.kalman_filter.visualize_data()
                 # Redraw the figure
-                plt.pause(self.pause_period)
+                plt.pause(pause_time)
             elif self.tune_controller:
-                plt.pause(self.pause_period)
+                plt.pause(pause_time)
             else:
-                time.sleep(self.pause_period)
+                time.sleep(pause_time)
 
 
 if __name__ == "__main__":
@@ -233,7 +297,7 @@ if __name__ == "__main__":
     parser.add_argument(
         "--camera_port",
         type=str,
-        default="/dev/video4",
+        default="/dev/video0",
         help="The port for the camera",
     )
 
@@ -247,8 +311,7 @@ if __name__ == "__main__":
     # add argument for CV/Camera debug
     parser.add_argument(
         "--camera_debug",
-        type=bool,
-        default=False,
+        action="store_true",
         help="Flag for showing more camera info for debugging",
     )
 
@@ -261,6 +324,12 @@ if __name__ == "__main__":
         "--tune_controller",
         action="store_true",
         help="Run the control loop in tuning mode",
+    )
+
+    parser.add_argument(
+        "--cam_color_mask_detect",
+        action="store_true",
+        help="Run the camera calibration",
     )
 
     args = parser.parse_args()
@@ -279,5 +348,6 @@ if __name__ == "__main__":
         servo_offsets=servo_offsets,
         tune_controller=args.tune_controller,
         run_controller=run_controller,
+        cam_color_mask_detect=args.cam_color_mask_detect,
     )
     mcl.run()

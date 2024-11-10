@@ -15,3 +15,10 @@ class Point:
 
     def __repr__(self):
         return f"Point({self.x}, {self.y})"
+
+
+def lpf_point(prev_point, new_point, fc, dt):
+    alpha = 2 * np.pi * fc * dt / (2 * np.pi * fc * dt + 1)
+    x = alpha * new_point.x + (1 - alpha) * prev_point.x
+    y = alpha * new_point.y + (1 - alpha) * prev_point.y
+    return Point(x, y)

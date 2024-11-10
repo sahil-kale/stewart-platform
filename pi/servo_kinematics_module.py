@@ -14,7 +14,19 @@ class ServoKinematicsModule:
         self.lh = lh  # Length of the servo horn
         self.la = la  # Length of the arm
 
+        self.height_dict = {}
+
+        max_height = lh + la
+        self.num_points = 1000
+        for height in np.linspace(0, max_height, self.num_points):
+            self.height_dict[height] = self.compute_servo_angle_optimizer(height)
+
     def compute_servo_angle(self, desired_height: float):
+        height_keys = list(self.height_dict.keys())
+        closest_height = min(height_keys, key=lambda x: abs(x - desired_height))
+        return self.height_dict[closest_height]
+
+    def compute_servo_angle_optimizer(self, desired_height: float):
         """
         Compute the servo angle required to reach the desired height.
         Assumes the servo horn and arm linkage produce a strictly "upward" vector.
