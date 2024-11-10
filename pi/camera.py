@@ -144,7 +144,7 @@ class Camera:
     def show_camera_feed(self):
         # Show camera feed
         while True:
-            print(self.get_ball_coordinates())
+            # print(self.get_ball_coordinates())
 
     def get_ball_coordinates(self):
         # Get the coordinates of the ball
@@ -250,10 +250,10 @@ class Camera:
         obj_coords_platform_frame = np.dot(rot_Z, obj_coords_cam_frame)
         obj_coords_platform_frame = np.dot(rot_X, obj_coords_platform_frame)
 
-        if self.debug:
-            print(
-                f"Pixel coordinates: ({u}, {v}), camera_coords: {camera_coords}, obj_coords_platform_frame: {obj_coords_platform_frame}"
-            )
+        # if self.debug:
+        #     print(
+        #         f"Pixel coordinates: ({u}, {v}), camera_coords: {camera_coords}, obj_coords_platform_frame: {obj_coords_platform_frame}"
+        #     )
 
         obj_coords_2d_point = Point(
             obj_coords_platform_frame[0], obj_coords_platform_frame[1]
@@ -283,7 +283,7 @@ if __name__ == "__main__":
 
     for i in range(1000):
         current_measurement = cv_system.get_ball_coordinates()
-        print(f"Current position is: {current_measurement}")
+        # print(f"Current position is: {current_measurement}")
 
         filtered_state = kalman_filter.predict()
 
