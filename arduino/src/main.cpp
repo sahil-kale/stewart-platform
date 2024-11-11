@@ -5,18 +5,27 @@
 
 //#define DEBUG
 
-uint8_t servoPins[] = {9, 10, 11};
-Servo servos[NUM_SERVOS];  // Array to hold servo objects
+// These values are all placeholders for now
+uint8_t stepPins[] = {9, 10, 11};
+uint8_t dirPins[] = {1, 2, 3};
+uint8_t limitSwitchPin[] = {4, 5, 6};
+
+constexpr stepsPerRevolution = 20000; // Arbitrary rn
+
+IndividualStepper steppers[NUM_STEPPERS];
+MultiStepper multiStepper;
 
 void setup() {
     // Initialize the serial communication
     Serial.begin(9600);
 
-    // Attach servos to the appropriate pins once during setup
-    for (uint8_t i = 0; i < NUM_SERVOS; i++) {
-        servos[i].attach(servoPins[i]);
-        servos[i].writeMicroseconds(1400); 
-    }
+    // Instantiate stepper objects at once
+    for (uint8_t i = 0; i < NUM_STEPPERS; i++) {
+        steppers[i] = IndividualStepper(stepPins[i], dirPins[i], stepsPerRevolution);
+        multiStepper.addStepper(steppers[i]);
+    } 
+
+    multiStepper.home();
 }
 
 void loop() {
@@ -37,7 +46,7 @@ void loop() {
 #ifdef DEBUG
         if (request.valid) {
             Serial.print("Duty cycles: ");
-            for (uint8_t i = 0; i < NUM_SERVOS; i++) {
+            for (uint8_t i = 0; i < NUM_STEPPERS; i++) {
                 Serial.print(request.dutyCyclesUs[i]);
                 Serial.print(" ");
             }
@@ -50,8 +59,9 @@ void loop() {
 
     // If the data is valid, update the servo positions.
     if (request.valid) {
-        for (uint8_t i = 0; i < NUM_SERVOS; i++) {
+        for (uint8_t i = 0; i < NUM_STEPPERS; i++) {
             if (request.dutyCyclesUs[i] > 0) {
+                multiStepper.step()
                 servos[i].writeMicroseconds(request.dutyCyclesUs[i]);  // Update servo positions without detaching
             }
         }

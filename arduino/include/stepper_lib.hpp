@@ -54,6 +54,15 @@ class MultiStepper
         }
     }
 
+    MultiStepper() {}
+
+    void addStepper(IndividualStepper& stepper) {
+        if (num_steppers < NUM_STEPPERS) {
+            steppers[num_steppers] = stepper;
+        }
+        num_steppers++;
+    }
+
     void home()
     {
         for (uint8_t i = 0; i < NUM_STEPPERS; i++)
@@ -111,6 +120,8 @@ class MultiStepper
             }
         }
     }
+
+    uint8_t num_steppers = 0;
 
 
 };
