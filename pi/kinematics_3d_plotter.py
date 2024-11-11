@@ -4,8 +4,8 @@ from mpl_toolkits.mplot3d import Axes3D
 
 
 class Kinematics3dPlotter:
-    def __init__(self, attachment_points, lh, la):
-        self.attachment_points = attachment_points
+    def __init__(self, base_attachment_points, lh, la):
+        self.base_attachment_points = base_attachment_points
         self.lh = lh
         self.la = la
 
@@ -26,12 +26,12 @@ class Kinematics3dPlotter:
         self.ax.set_ylim(self.y_lim)
         self.ax.set_zlim(self.z_lim)
 
-    def compute_linkage_points(self, attachment_points, servo_angles, lh):
+    def compute_linkage_points(self, base_attachment_points, servo_angles, lh):
         """
         Computes the 3D linkage points for each servo based on the servo angles and horn length.
         """
         linkage_points = []
-        for i, attachment_point in enumerate(attachment_points):
+        for i, attachment_point in enumerate(base_attachment_points):
             theta1, _ = servo_angles[i]
 
             # Make a servo horn vector
@@ -65,16 +65,14 @@ class Kinematics3dPlotter:
 
         return np.array(linkage_points)
 
-    def plot_kinematics(
-        self, attachment_points, desired_platform_points_in_base_frame, linkage_points
-    ):
+    def plot_kinematics(self, desired_platform_points_in_base_frame, linkage_points):
         """
         Plots the kinematic setup: base points, transformed platform points, servo vectors, and servo legs.
         """
         self.ax.clear()
 
-        # Plot the base (attachment_points) plane
-        attachment_x, attachment_y, attachment_z = attachment_points.T
+        # Plot the base attachment_points plane
+        attachment_x, attachment_y, attachment_z = self.base_attachment_points.T
         self.ax.scatter(attachment_x, attachment_y, attachment_z, color="blue", s=100)
         self.ax.plot_trisurf(
             attachment_x, attachment_y, attachment_z, color="blue", alpha=0.3
@@ -88,7 +86,7 @@ class Kinematics3dPlotter:
         self.ax.plot_trisurf(platform_x, platform_y, platform_z, color="red", alpha=0.3)
 
         # Plot the servo vectors (from base to platform)
-        for i in range(len(attachment_points)):
+        for i in range(len(self.base_attachment_points)):
             self.ax.plot(
                 [attachment_x[i], platform_x[i]],
                 [attachment_y[i], platform_y[i]],
@@ -102,7 +100,7 @@ class Kinematics3dPlotter:
         self.ax.scatter(linkage_x, linkage_y, linkage_z, color="purple", s=100)
 
         # Plot servo arms (between base and linkage, and linkage and platform)
-        for i in range(len(attachment_points)):
+        for i in range(len(self.base_attachment_points)):
             self.ax.plot(
                 [attachment_x[i], linkage_x[i]],
                 [attachment_y[i], linkage_y[i]],
@@ -128,12 +126,11 @@ class Kinematics3dPlotter:
         # Compute the servo angles and linkage points
         desired_platform_points_in_base_frame = platform_points
         linkage_points = self.compute_linkage_points(
-            self.attachment_points, servo_angles, self.lh
+            self.base_attachment_points, servo_angles, self.lh
         )
 
         # Update the plot with new values
         self.plot_kinematics(
-            self.attachment_points,
             desired_platform_points_in_base_frame,
             linkage_points,
         )
