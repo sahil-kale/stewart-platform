@@ -56,7 +56,7 @@ class KalmanFilter:
             self.A @ self.P @ self.A.T + self.Q
         )  # Update the sensor covariance matrix
 
-        new_state = [
+        self.new_state = [
             self.X[0, 0],
             self.X[1, 0],
             self.X[2, 0],
@@ -65,7 +65,7 @@ class KalmanFilter:
             self.X[5, 0],
         ]
 
-        return Point(new_state[0], new_state[1])
+        return Point(self.new_state[0], self.new_state[1])
 
     def update(self, measured_point):
         # Use the new measurements to update the prediction
@@ -84,7 +84,7 @@ class KalmanFilter:
 
         self.X = self.X + self.K @ Y  # Update value based on the new kalman gain
 
-        new_state = [
+        self.new_state = [
             self.X[0, 0],
             self.X[1, 0],
             self.X[2, 0],
@@ -93,7 +93,7 @@ class KalmanFilter:
             self.X[5, 0],
         ]
 
-        return Point(new_state[0], new_state[1])
+        return Point(self.new_state[0], self.new_state[1])
 
     def visualize_data(self):
         plt.figure(figsize=(10, 6))
@@ -131,14 +131,14 @@ class KalmanFilter:
         self.noisy_positions_x.append(self.most_recent_measurement_x)
         self.noisy_positions_y.append(self.most_recent_measurement_y)
 
-        self.filtered_positions_x.append(self.new_state[0].x)
-        self.filtered_positions_y.append(self.new_state[0].y)
+        self.filtered_positions_x.append(self.new_state[0])
+        self.filtered_positions_y.append(self.new_state[1])
 
-        self.filtered_velocity_x.append(self.new_state[1].x)
-        self.filtered_velocity_y.append(self.new_state[1].y)
+        self.filtered_velocity_x.append(self.new_state[2])
+        self.filtered_velocity_y.append(self.new_state[3])
 
-        self.filtered_acceleration_x.append(self.new_state[2].x)
-        self.filtered_acceleration_y.append(self.new_state[2].y)
+        self.filtered_acceleration_x.append(self.new_state[4])
+        self.filtered_acceleration_y.append(self.new_state[5])
 
 
 def main(Q_val, R_val, dt_val):
