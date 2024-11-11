@@ -24,7 +24,7 @@ class Camera:
         )  # height of the camera from the ground in meters
 
         # Used to a mask where we reject any input that is not within the circular platform
-        self.ball_platform_radius_px = 150
+        self.ball_platform_radius_px = 200
 
         # Set camera object and port
         self.port = port
@@ -143,10 +143,10 @@ class Camera:
         self.cameraMatrix = np.array(data["cameraMatrix"])
         self.dist = np.array(data["dist"])
 
-    # def show_camera_feed(self):
+    def show_camera_feed(self):
     # Show camera feed
-    # while True:
-    # print(self.get_ball_coordinates())
+        while True:
+            print(self.get_ball_coordinates())
 
     def get_ball_coordinates(self):
         # Get the coordinates of the ball
@@ -257,10 +257,10 @@ class Camera:
         obj_coords_platform_frame = np.dot(rot_Z, obj_coords_cam_frame)
         obj_coords_platform_frame = np.dot(rot_X, obj_coords_platform_frame)
 
-        # if self.debug:
-        #     print(
-        #         f"Pixel coordinates: ({u}, {v}), camera_coords: {camera_coords}, obj_coords_platform_frame: {obj_coords_platform_frame}"
-        #     )
+        if self.debug:
+            print(
+                f"Pixel coordinates: ({u}, {v}), camera_coords: {camera_coords}, obj_coords_platform_frame: {obj_coords_platform_frame}"
+            )
 
         obj_coords_2d_point = Point(
             obj_coords_platform_frame[0], obj_coords_platform_frame[1]
