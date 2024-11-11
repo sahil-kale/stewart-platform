@@ -144,7 +144,7 @@ class Camera:
         self.dist = np.array(data["dist"])
 
     def show_camera_feed(self):
-    # Show camera feed
+        # Show camera feed
         while True:
             print(self.get_ball_coordinates())
 
@@ -176,10 +176,6 @@ class Camera:
         # Combine the color mask with the circular mask
         combined_mask = cv.bitwise_and(mask, mask, mask=circular_mask)
 
-        # Apply a morphological mask
-        kernel = np.ones((3, 3), np.uint8)
-        combined_mask = cv.morphologyEx(combined_mask, cv.MORPH_OPEN, kernel)
-        combined_mask = cv.morphologyEx(combined_mask, cv.MORPH_CLOSE, kernel)
         # Apply the combined mask to the original frame
         res = cv.bitwise_and(frame, frame, mask=combined_mask)
 
