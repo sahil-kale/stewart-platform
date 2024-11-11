@@ -77,9 +77,9 @@ class MainControlLoop:
             - self.params["platform_attachment_radius"],
         )
 
-        kp = 30
+        kp = 2.0
         ki = 0.0
-        kd = 0
+        kd = 30
         self.ball_controller = BallController(
             kp,
             ki,
@@ -128,7 +128,9 @@ class MainControlLoop:
             self.cv_system = Camera(data["u"], data["v"], camera_port, camera_debug)
             self.cv_system.load_camera_params("pi/camera_calibration_data.json")
 
-        self.kalman_filter = KalmanFilter(self.dt)  # Use default params for now
+        self.kalman_filter = KalmanFilter(
+            self.dt, Q=100, R=200
+        )  # Use default params for now
 
         self.current_position = Point(0, 0)
 
@@ -179,7 +181,7 @@ class MainControlLoop:
                 if self.virtual is False:
                     current_measurement = self.cv_system.get_ball_coordinates()
 
-                    filtered_state = self.kalman_filter.predict()
+                    self.current_position = self.kalman_filter.predict()
 
                     if current_measurement is not None:
                         self.current_position = self.kalman_filter.update(
@@ -187,11 +189,12 @@ class MainControlLoop:
                         )
                         camera_valid = True
                         print(
-                            f"Time: {time.time()} | Current position is: {self.current_position}"
+                            f"Time: {time.time()} | Current position is: {self.current_position} | Measured position is: {current_measurement}"
                         )
                     else:
                         if self.camera_debug:
-                            print("Ball not detected!!! Using old value for now")
+                            print("Ball not detected")
+
                 else:
                     self.current_position = Point(0, 0)
 
