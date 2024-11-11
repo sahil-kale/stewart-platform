@@ -37,7 +37,7 @@ class MainControlLoop:
         cam_color_mask_detect: bool = False,
         cam_calibration_images: bool = False,
     ):
-        self.pause_period = 0.05
+        self.dt = 0.05
         self.saturate_angle = 14
         self.params = {
             "lh": 41 / 1000,
@@ -75,7 +75,7 @@ class MainControlLoop:
             kp,
             ki,
             kd,
-            self.pause_period,
+            self.dt,
             np.deg2rad(self.saturate_angle),
         )
 
@@ -116,7 +116,7 @@ class MainControlLoop:
             self.cv_system = Camera(data["u"], data["v"], camera_port, camera_debug)
             self.cv_system.load_camera_params("pi/camera_calibration_data.json")
 
-        self.kalman_filter = KalmanFilter()  # Use default params for now
+        self.kalman_filter = KalmanFilter(self.dt)  # Use default params for now
 
         self.current_position = Point(0, 0)
 
@@ -164,27 +164,22 @@ class MainControlLoop:
             if self.run_controller:
                 if self.virtual is False:
                     current_measurement = self.cv_system.get_ball_coordinates()
-                    print(f"Current position is: {current_measurement}")
-                    current_measurement
 
                     filtered_state = self.kalman_filter.predict()
 
                     if current_measurement is not None:
-                        filtered_state = self.kalman_filter.update(current_measurement)
+                        self.current_position = self.kalman_filter.update(
+                            current_measurement
+                        )
                         camera_valid = True
+                        print(
+                            f"Time: {time.time()} | Current position is: {self.current_measurement}"
+                        )
                     else:
                         if self.camera_debug:
                             print("Ball not detected!!! Using old value for now")
-
-                    self.kalman_filter.append_noisy_measurement()
-
-                    self.current_position = filtered_state[0]
-                    self.current_velocity = filtered_state[1]
-                    self.current_acceleration = filtered_state[2]
                 else:
                     self.current_position = Point(0, 0)
-                    self.current_velocity = Point(0, 0)
-                    self.current_acceleration = Point(0, 0)
 
                 output_angles = self.ball_controller.run_control_loop(
                     desired_position, self.current_position
@@ -266,7 +261,7 @@ class MainControlLoop:
             )
 
             time_elapsed = time.time() - time_since_start
-            pause_time = self.pause_period - time_elapsed
+            pause_time = self.dt - time_elapsed
             if pause_time < 0:
                 print(
                     f"Loop is taking too long to run! {time_elapsed} seconds, {pause_time} seconds"
@@ -275,7 +270,7 @@ class MainControlLoop:
             # Update visualization if enabled
             if self.run_visualizer:
                 self.visualizer.update(platform_points_in_base_frame, servo_angles)
-=                # Redraw the figure
+                # Redraw the figure
                 plt.pause(pause_time)
             elif self.tune_controller:
                 plt.pause(pause_time)

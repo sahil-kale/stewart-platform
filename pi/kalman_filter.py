@@ -7,7 +7,7 @@ import json
 
 
 class KalmanFilter:
-    def __init__(self, Q=0.01, R=5.0, dt=0.05, outlier_threshold=0.2):
+    def __init__(self, dt, Q=0.01, R=5.0, outlier_threshold=0.2):
         self.K = 1.0  # Initial kalman gain
         self.dt = dt
         self.X = np.zeros(
