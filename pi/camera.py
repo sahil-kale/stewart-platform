@@ -170,6 +170,7 @@ class Camera:
 
         # Combine the color mask with the circular mask
         combined_mask = cv.bitwise_and(mask, mask, mask=circular_mask)
+
         # Apply the combined mask to the original frame
         res = cv.bitwise_and(frame, frame, mask=combined_mask)
 
@@ -188,7 +189,7 @@ class Camera:
             dp=1.2,
             minDist=30,
             param1=50,
-            param2=30,
+            param2=25,
             minRadius=5,
             maxRadius=50,
         )
@@ -257,15 +258,3 @@ class Camera:
         )
 
         return obj_coords_2d_point
-
-
-if __name__ == "__main__":
-    # from pi/camera_params.json get the data
-    with open("pi/camera_params.json") as f:
-        data = json.load(f)
-
-    # Create camera object
-    cam = Camera(data["u"], data["v"], "/dev/video0", debug=True)
-    print(cam.u, cam.v, cam.port)
-    cam.calibrate_cam_from_images()
-    cam.show_camera_feed()

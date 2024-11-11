@@ -10,6 +10,7 @@ from ball_controller import BallController
 import argparse
 import matplotlib.pyplot as plt
 from matplotlib.widgets import Slider
+from kalman_filter import KalmanFilter
 import time
 import json
 
@@ -36,7 +37,7 @@ class MainControlLoop:
         cam_color_mask_detect: bool = False,
         cam_calibration_images: bool = False,
     ):
-        self.pause_period = 0.05
+        self.dt = 0.05
         self.saturate_angle = 14
         self.params = {
             "lh": 41 / 1000,
@@ -74,7 +75,7 @@ class MainControlLoop:
             kp,
             ki,
             kd,
-            self.pause_period,
+            self.dt,
             np.deg2rad(self.saturate_angle),
         )
 
@@ -104,18 +105,20 @@ class MainControlLoop:
         # get the current directory
         current_dir = os.path.dirname(os.path.realpath(__file__))
         # get the file camera.json with the current dir
-        file_path = os.path.join(current_dir, "camera_params.json")
+        cv_params_file_path = os.path.join(current_dir, "camera_params.json")
 
         self.camera_debug = camera_debug
 
-        with open(file_path, "r") as file:
+        with open(cv_params_file_path, "r") as file:
             data = json.load(file)  # Load JSON data as a dictionary
 
         if self.virtual is not True:
             self.cv_system = Camera(data["u"], data["v"], camera_port, camera_debug)
             self.cv_system.load_camera_params("pi/camera_calibration_data.json")
 
-        self.current_position = Point(0.0, 0.0)
+        self.kalman_filter = KalmanFilter(self.dt)  # Use default params for now
+
+        self.current_position = Point(0, 0)
 
     def create_kinematic_sliders(self):
         """Create sliders for pitch, roll, and height"""
@@ -160,12 +163,18 @@ class MainControlLoop:
             desired_position = Point(0, 0)
             if self.run_controller:
                 if self.virtual is False:
-                    current_position = self.cv_system.get_ball_coordinates()
-                    print(f"Current position is: {current_position}")
+                    current_measurement = self.cv_system.get_ball_coordinates()
 
-                    if current_position is not None:
-                        self.current_position = current_position
+                    filtered_state = self.kalman_filter.predict()
+
+                    if current_measurement is not None:
+                        self.current_position = self.kalman_filter.update(
+                            current_measurement
+                        )
                         camera_valid = True
+                        print(
+                            f"Time: {time.time()} | Current position is: {self.current_measurement}"
+                        )
                     else:
                         if self.camera_debug:
                             print("Ball not detected!!! Using old value for now")
@@ -252,7 +261,7 @@ class MainControlLoop:
             )
 
             time_elapsed = time.time() - time_since_start
-            pause_time = self.pause_period - time_elapsed
+            pause_time = self.dt - time_elapsed
             if pause_time < 0:
                 print(
                     f"Loop is taking too long to run! {time_elapsed} seconds, {pause_time} seconds"
