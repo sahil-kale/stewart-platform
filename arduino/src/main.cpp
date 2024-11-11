@@ -1,6 +1,7 @@
 #include <Arduino.h>
 #include <Servo.h>
 #include "serial_decryption.hpp"
+#include "stepper_lib.hpp"
 
 //#define DEBUG
 
