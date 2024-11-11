@@ -15,11 +15,11 @@ class Camera:
         self.v = v
 
         self.static_height_m = (
-            (12) * 2.54 / 100
+            (13) * 2.54 / 100
         )  # height of the camera from the ground in meters
 
         # Used to a mask where we reject any input that is not within the circular platform
-        self.ball_platform_radius_px = 200
+        self.ball_platform_radius_px = 270
 
         # Set camera object and port
         self.port = port
@@ -37,7 +37,7 @@ class Camera:
         self.lower_color = np.array([35, 50, 100], dtype=np.uint8)
         self.upper_color = np.array([85, 255, 255], dtype=np.uint8)
 
-        self.set_camera_brightness(25)
+        self.set_camera_brightness(50)
         self.set_camera_contrast(50)
         self.set_camera_saturation(99)
         self.set_auto_white_balance(1)
@@ -190,7 +190,7 @@ class Camera:
             minDist=30,
             param1=50,
             param2=25,
-            minRadius=5,
+            minRadius=10,
             maxRadius=50,
         )
         # Draw detected circles on the original image
@@ -258,3 +258,14 @@ class Camera:
         )
 
         return obj_coords_2d_point
+
+
+if __name__ == "__main__":
+    # from pi/camera_params.json get the data
+    with open("pi/camera_params.json") as f:
+        data = json.load(f)
+    # Create camera object
+    cam = Camera(data["u"], data["v"], "/dev/video0", debug=True)
+    print(cam.u, cam.v, cam.port)
+    cam.calibrate_cam_from_images()
+    cam.show_camera_feed()
