@@ -119,10 +119,6 @@ class MainControlLoop:
         self.kalman_filter = KalmanFilter()  # Use default params for now
 
         self.current_position = Point(0, 0)
-        self.current_velocity = Point(0, 0)
-        self.current_acceleration = Point(0, 0)
-
-        self.pause_period = 0.01
 
     def create_kinematic_sliders(self):
         """Create sliders for pitch, roll, and height"""
