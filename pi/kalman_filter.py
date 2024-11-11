@@ -46,7 +46,7 @@ class KalmanFilter:
         self.most_recent_measurement_x = 0
         self.most_recent_measurement_y = 0
 
-        self.new_state = [Point(0, 0), Point(0, 0), Point(0,0)]
+        self.new_state = [0, 0, 0, 0, 0, 0]
 
     def predict(self):
         self.X = (
@@ -56,18 +56,24 @@ class KalmanFilter:
             self.A @ self.P @ self.A.T + self.Q
         )  # Update the sensor covariance matrix
 
-        estimated_position = Point(self.X[0, 0], self.X[1, 0])
-        estimated_velocity = Point(self.X[2, 0], self.X[3, 0])
-        estimated_acceleration = Point(self.X[4, 0], self.X[5, 0])
-        new_state = [estimated_position, estimated_velocity, estimated_acceleration]
+        new_state = [
+            self.X[0, 0],
+            self.X[1, 0],
+            self.X[2, 0],
+            self.X[3, 0],
+            self.X[4, 0],
+            self.X[5, 0],
+        ]
 
-        return new_state
+        return Point(new_state[0], new_state[1])
 
     def update(self, measured_point):
         # Use the new measurements to update the prediction
         self.most_recent_measurement_x = measured_point.x
         self.most_recent_measurement_y = measured_point.y
-        Z = np.array([self.most_recent_measurement_x, self.most_recent_measurement_y]).reshape(2, 1)
+        Z = np.array(
+            [self.most_recent_measurement_x, self.most_recent_measurement_y]
+        ).reshape(2, 1)
 
         # Update error vector Y
         Y = Z - self.H @ self.X
@@ -77,13 +83,17 @@ class KalmanFilter:
         self.P = (np.eye(len(self.P)) - self.K @ self.H) @ self.P
 
         self.X = self.X + self.K @ Y  # Update value based on the new kalman gain
-        estimated_position = Point(self.X[0, 0], self.X[1, 0])
-        estimated_velocity = Point(self.X[2, 0], self.X[3, 0])
-        estimated_acceleration = Point(self.X[4, 0], self.X[5, 0])
 
-        self.new_state = [estimated_position, estimated_velocity, estimated_acceleration]
+        new_state = [
+            self.X[0, 0],
+            self.X[1, 0],
+            self.X[2, 0],
+            self.X[3, 0],
+            self.X[4, 0],
+            self.X[5, 0],
+        ]
 
-        return self.new_state
+        return Point(new_state[0], new_state[1])
 
     def visualize_data(self):
         plt.figure(figsize=(10, 6))
@@ -136,7 +146,7 @@ def main(Q_val, R_val, dt_val):
     measured_points_file_path = os.path.join(current_dir, "measured_points.json")
     with open(measured_points_file_path, "r") as file:
         data = json.load(file)  # Load JSON data as a dictionary
-    
+
     measured_points_x = data["x"]
     measured_points_y = data["y"]
 
@@ -146,16 +156,22 @@ def main(Q_val, R_val, dt_val):
         noisy_x = measured_points_x[i]
         noisy_y = measured_points_y[i]
 
-        if (noisy_x is not None and noisy_y is not None):
-            if (kalman_filter.most_recent_measurement_x is None or kalman_filter.most_recent_measurement_y is None):
+        if noisy_x is not None and noisy_y is not None:
+            if (
+                kalman_filter.most_recent_measurement_x is None
+                or kalman_filter.most_recent_measurement_y is None
+            ):
                 current_measurement = Point(noisy_x, noisy_y)
 
-            elif (np.abs(noisy_x - kalman_filter.most_recent_measurement_x) < 0.02 and np.abs(noisy_y - kalman_filter.most_recent_measurement_y) < 0.02):
+            elif (
+                np.abs(noisy_x - kalman_filter.most_recent_measurement_x) < 0.02
+                and np.abs(noisy_y - kalman_filter.most_recent_measurement_y) < 0.02
+            ):
                 current_measurement = Point(noisy_x, noisy_y)
-            
+
             else:
                 current_measurement = None
-            
+
         else:
             current_measurement = None
 
@@ -167,11 +183,10 @@ def main(Q_val, R_val, dt_val):
             print("Ball not detected!!! Using old value for now")
             kalman_filter.most_recent_measurement_x = None
             kalman_filter.most_recent_measurement_y = None
-            
+
         kalman_filter.append_noisy_measurement()
 
     kalman_filter.visualize_data()
-
 
 
 if __name__ == "__main__":
