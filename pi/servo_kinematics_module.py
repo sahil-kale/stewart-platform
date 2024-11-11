@@ -5,14 +5,16 @@ from matplotlib.widgets import Slider
 
 
 class ServoKinematicsModule:
-    def __init__(self, lh: float, la: float):
+    def __init__(self, lh: float, la: float, radial_displacement: float):
         """
         Initialize the servo kinematics module with the lengths of the upper arm and lower arm.
         :param lh: The length of the servo horn (m)
         :param la: The length of the arm (m)
+        :param radial_displacement: The radial displacement of the arm (m) - positive is outward displacement
         """
         self.lh = lh  # Length of the servo horn
         self.la = la  # Length of the arm
+        self.radial_displacement = radial_displacement
 
         self.height_dict = {}
 
@@ -45,7 +47,9 @@ class ServoKinematicsModule:
 
             # Geometric constraint - must travel vertically
             constraint_violation = (
-                self.lh * np.cos(theta1) - self.la * np.cos(theta2)
+                self.lh * np.cos(theta1)
+                - self.la * np.cos(theta2)
+                - self.radial_displacement
             ) ** 2
             constraint_violation_weight = 1000
 
@@ -123,7 +127,9 @@ def update(val):
 
 if __name__ == "__main__":
     # Create the servo kinematics module
-    skm = ServoKinematicsModule(lh=45 / 1000, la=51 / 1000)
+    skm = ServoKinematicsModule(
+        lh=67.5 / 1000, la=51 / 1000, radial_displacement=-30 / 1000
+    )
 
     # Create the plot
     fig, ax = plt.subplots()

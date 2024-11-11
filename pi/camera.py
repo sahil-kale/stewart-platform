@@ -15,7 +15,7 @@ class Camera:
         self.v = v
 
         self.static_height_m = (
-            (15.5 - 1.4) * 2.54 / 100
+            (12) * 2.54 / 100
         )  # height of the camera from the ground in meters
 
         # Used to a mask where we reject any input that is not within the circular platform

@@ -38,11 +38,13 @@ class MainControlLoop:
         cam_calibration_images: bool = False,
     ):
         self.dt = 0.05
-        self.saturate_angle = 14
+        self.saturate_angle = 25
         self.params = {
-            "lh": 41 / 1000,
-            "la": 51 / 1000,
-            "platform_attachment_radius": 100 / 1000,
+            "lh": 67.5 / 1000,
+            "la": 122.2 / 1000,
+            "platform_attachment_radius": 70 / 1000,
+            "base_attachment_radius": 100 / 1000,
+            "resting_height": 0.12,
         }
 
         self.servo_offset_radians = [
@@ -57,13 +59,23 @@ class MainControlLoop:
             [-0.5, -0.86602540378, 0.0],
         ]
 
-        self.attachment_points = np.array(attachment_points_structure)
-        self.attachment_points = (
-            self.attachment_points * self.params["platform_attachment_radius"]
+        self.platform_attachment_points = np.array(attachment_points_structure)
+        self.platform_attachment_points = (
+            self.platform_attachment_points * self.params["platform_attachment_radius"]
         )
 
-        self.pk = PlatformKinematicsModule(self.attachment_points)
-        self.sk = ServoKinematicsModule(self.params["lh"], self.params["la"])
+        self.base_attachment_points = np.array(attachment_points_structure)
+        self.base_attachment_points = (
+            self.base_attachment_points * self.params["base_attachment_radius"]
+        )
+
+        self.pk = PlatformKinematicsModule(self.platform_attachment_points)
+        self.sk = ServoKinematicsModule(
+            self.params["lh"],
+            self.params["la"],
+            self.params["base_attachment_radius"]
+            - self.params["platform_attachment_radius"],
+        )
 
         kp = 30
         ki = 0.0
@@ -84,7 +96,7 @@ class MainControlLoop:
 
         if self.run_visualizer:
             self.visualizer = Kinematics3dPlotter(
-                self.attachment_points, self.params["lh"], self.params["la"]
+                self.base_attachment_points, self.params["lh"], self.params["la"]
             )
             self.create_kinematic_sliders()
 
@@ -132,7 +144,9 @@ class MainControlLoop:
         self.slider_roll = Slider(
             ax_roll, "Roll", -self.saturate_angle, self.saturate_angle, valinit=0.0
         )
-        self.slider_height = Slider(ax_height, "Height", 0.02, 0.1, valinit=0.06)
+        self.slider_height = Slider(
+            ax_height, "Height", 0.02, 0.2, valinit=self.params["resting_height"]
+        )
 
     def create_pid_tuning_sliders(self):
         """Create sliders for tuning kp, ki, and kd gains for the x-axis"""
@@ -173,7 +187,7 @@ class MainControlLoop:
                         )
                         camera_valid = True
                         print(
-                            f"Time: {time.time()} | Current position is: {self.current_measurement}"
+                            f"Time: {time.time()} | Current position is: {self.current_position}"
                         )
                     else:
                         if self.camera_debug:
@@ -195,7 +209,7 @@ class MainControlLoop:
 
                 pitch_rad = output_angles[0]
                 roll_rad = output_angles[1]
-                height = 0.060  # default height
+                height = self.params["resting_height"]
             else:
                 # set the pitch and roll sliders to negative whatever it was before
                 # self.slider_pitch.set_val(-self.slider_pitch.val)
@@ -209,7 +223,7 @@ class MainControlLoop:
             platform_points = self.pk.compute_transformed_platform_attachment_points(
                 roll_rad, pitch_rad
             )
-            skf = ServoKinematicsFeeder(height, self.attachment_points)
+            skf = ServoKinematicsFeeder(height, self.platform_attachment_points)
             servo_vectors, platform_points_in_base_frame = skf.compute_servo_vector(
                 platform_points
             )
@@ -333,8 +347,7 @@ if __name__ == "__main__":
 
     run_controller = args.inhibit_controller == False
 
-    # Current computed offsets are [0, 8, 10] for servo 0, 1, and 2 respectively
-    servo_offsets = [0, 8, 10]
+    servo_offsets = [0, 0, -10]
 
     mcl = MainControlLoop(
         args.port,
