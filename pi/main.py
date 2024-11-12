@@ -13,6 +13,7 @@ from matplotlib.widgets import Slider
 from kalman_filter import KalmanFilter
 import time
 import json
+from platform_kinematics_feeder import PlatformKinematicsFeeder
 
 import os, pty
 
@@ -37,14 +38,14 @@ class MainControlLoop:
         cam_color_mask_detect: bool = False,
         cam_calibration_images: bool = False,
     ):
-        self.dt = 0.05
+        self.dt = 0.035
         self.saturate_angle = 25
         self.params = {
             "lh": 67.5 / 1000,
             "la": 122.2 / 1000,
             "platform_attachment_radius": 70 / 1000,
             "base_attachment_radius": 100 / 1000,
-            "resting_height": 0.12,
+            "resting_height": 0.17,
         }
 
         self.servo_offset_radians = [
@@ -77,9 +78,9 @@ class MainControlLoop:
             - self.params["platform_attachment_radius"],
         )
 
-        kp = 2.0
+        kp = 0.6
         ki = 0.0
-        kd = 30
+        kd = 0.75
         self.ball_controller = BallController(
             kp,
             ki,
@@ -129,7 +130,7 @@ class MainControlLoop:
             self.cv_system.load_camera_params("pi/camera_calibration_data.json")
 
         self.kalman_filter = KalmanFilter(
-            self.dt, Q=100, R=200
+            self.dt, Q=100, R=300
         )  # Use default params for now
 
         self.current_position = Point(0, 0)
@@ -212,7 +213,14 @@ class MainControlLoop:
 
                 pitch_rad = output_angles[0]
                 roll_rad = output_angles[1]
-                height = self.params["resting_height"]
+                pkf = PlatformKinematicsFeeder()
+                height = pkf.calculate_desired_platform_height(
+                    self.params["resting_height"],
+                    self.current_position,
+                    pitch_rad,
+                    roll_rad,
+                )
+                # height = self.params["resting_height"]
             else:
                 # set the pitch and roll sliders to negative whatever it was before
                 # self.slider_pitch.set_val(-self.slider_pitch.val)
@@ -350,7 +358,7 @@ if __name__ == "__main__":
 
     run_controller = args.inhibit_controller == False
 
-    servo_offsets = [0, 0, -10]
+    servo_offsets = [0, 0, -12]
 
     mcl = MainControlLoop(
         args.port,
