@@ -11,7 +11,7 @@ class PlatformController:
     def __init__(
         self,
         port,
-        baudrate=9600,
+        baudrate=256000,
         duty_cycle_min=500,
         duty_cycle_max=2300,
         debug: bool = False,
