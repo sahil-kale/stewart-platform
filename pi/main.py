@@ -136,6 +136,7 @@ class MainControlLoop:
         self.current_position = Point(0, 0)
 
         self.logger = Logger("logs/log_{time.strftime('%Y-%m-%d_%H-%M-%S')}.json")
+        self.logging_data = []
 
     def create_kinematic_sliders(self):
         """Create sliders for pitch, roll, and height"""
@@ -255,7 +256,7 @@ class MainControlLoop:
             else:
                 current_measurement_x = current_measurement.x
                 current_measurement_y = current_measurement.y
-            data = [
+            new_data = [
                 {
                     "time": time_since_start,
                     "camera_measured_x": current_measurement_x,
@@ -267,13 +268,15 @@ class MainControlLoop:
                     "pitch_rad": pitch_rad,
                     "roll_rad": roll_rad,
                     "height": height,
-                    "servo_1_angle": servo_angle[0][0],
-                    "servo_2_angle": servo_angle[1][0],
-                    "servo_3_angle": servo_angle[2][0]
+                    "servo_1_angle": servo_angles[0],
+                    "servo_2_angle": servo_angles[1],
+                    "servo_3_angle": servo_angles[2]
                 }
             ]
 
-            self.logger.log_new_data(data)
+            self.logging_data.append(new_data)
+
+            self.logger.log_new_data(self.logging_data)
 
             time_elapsed = time.time() - time_since_start
             pause_time = self.dt - time_elapsed

@@ -27,4 +27,5 @@ class Logger:
     # ]
     def log_new_data(self, data):
         with open(self.file_path, "w") as file: 
+            print("Logging")
             json.dump(data, file, indent=4)
