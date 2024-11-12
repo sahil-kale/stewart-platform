@@ -11,6 +11,7 @@ import argparse
 import matplotlib.pyplot as plt
 from matplotlib.widgets import Slider
 from kalman_filter import KalmanFilter
+from logger import Logger
 import time
 import json
 
@@ -134,6 +135,8 @@ class MainControlLoop:
 
         self.current_position = Point(0, 0)
 
+        self.logger = Logger("logs/log_{time.strftime('%Y-%m-%d_%H-%M-%S')}.json")
+
     def create_kinematic_sliders(self):
         """Create sliders for pitch, roll, and height"""
         ax_pitch = plt.axes([0.15, 0.02, 0.65, 0.03], facecolor="lightgoldenrodyellow")
@@ -165,12 +168,6 @@ class MainControlLoop:
         # make a new directory "logs" if it doesn't exist
         if not os.path.exists("logs"):
             os.makedirs("logs")
-
-        logfile = f"logs/log_{time.strftime('%Y-%m-%d_%H-%M-%S')}.txt"
-
-        # open the log file in write mode
-        f = open(logfile, "w")
-        header_written = False
 
         while True:
             # Get pitch, roll, and height from the sliders
@@ -252,30 +249,31 @@ class MainControlLoop:
             # log the following data to the log file
             # time, current position, camera valid, desired position, pitch, roll, height, servo angles, duty cycles
             # ensure that all data is separated by commas and are converted to strictly numbers
-            if not header_written:
-                f.write(
-                    "time,current_position_x,current_position_y,camera_valid,desired_position_x,desired_position_y,pitch,roll,height,servo_angle_1,servo_angle_2,servo_angle_3,duty_cycle_1,duty_cycle_2,duty_cycle_3\n"
-                )
-                header_written = True
+            if current_measurement is None:
+                current_measurement_x = None
+                current_measurement_y = None
+            else:
+                current_measurement_x = current_measurement.x
+                current_measurement_y = current_measurement.y
+            data = [
+                {
+                    "time": time_since_start,
+                    "camera_measured_x": current_measurement_x,
+                    "camera_measured_y": current_measurement_y,
+                    "camera_filtered_x": self.current_position.x,
+                    "camera_filtered_y": self.current_position.y,
+                    "desired_position_x": desired_position.x,
+                    "desired_position_y": desired_position.y,
+                    "pitch_rad": pitch_rad,
+                    "roll_rad": roll_rad,
+                    "height": height,
+                    "servo_1_angle": servo_angle[0][0],
+                    "servo_2_angle": servo_angle[1][0],
+                    "servo_3_angle": servo_angle[2][0]
+                }
+            ]
 
-            # write the data to the log file - cast all number values to float
-            f.write(
-                f"{float(time_since_start)},"
-                f"{float(self.current_position.x)},"
-                f"{float(self.current_position.y)},"
-                f"{float(camera_valid)},"
-                f"{float(desired_position.x)},"
-                f"{float(desired_position.y)},"
-                f"{float(pitch_rad)},"
-                f"{float(roll_rad)},"
-                f"{float(height)},"
-                f"{float(servo_angles[0][0])},"
-                f"{float(servo_angles[1][0])},"
-                f"{float(servo_angles[2][0])},"
-                f"{float(duty_cycles[0])},"
-                f"{float(duty_cycles[1])},"
-                f"{float(duty_cycles[2])}\n"
-            )
+            self.logger.log_new_data(data)
 
             time_elapsed = time.time() - time_since_start
             pause_time = self.dt - time_elapsed
