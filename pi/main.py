@@ -135,8 +135,9 @@ class MainControlLoop:
 
         self.current_position = Point(0, 0)
 
-        self.logger = Logger("logs/log_{time.strftime('%Y-%m-%d_%H-%M-%S')}.json")
+        self.logger = Logger(f"logs/log_{time.strftime('%Y-%m-%d_%H-%M-%S')}.json")
         self.logging_data = []
+        self.loop_number = 0
 
     def create_kinematic_sliders(self):
         """Create sliders for pitch, roll, and height"""
@@ -256,8 +257,13 @@ class MainControlLoop:
             else:
                 current_measurement_x = current_measurement.x
                 current_measurement_y = current_measurement.y
+
+            # Update sequence number for logging
+
+            self.loop_number = self.loop_number + 1
             new_data = [
                 {
+                    "log_sequence_number": self.loop_number,
                     "time": time_since_start,
                     "camera_measured_x": current_measurement_x,
                     "camera_measured_y": current_measurement_y,
