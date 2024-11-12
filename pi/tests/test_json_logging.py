@@ -3,11 +3,12 @@ import json
 import time
 from logger import Logger  # Replace with the actual import if needed
 
+
 def test_log_new_data():
     # Initialize logger with a dummy file path
     file_path = "logs/test_log.json"
     logger = Logger(file_path)
-    
+
     # Create a sample data structure to log
     data = [
         {
@@ -23,7 +24,7 @@ def test_log_new_data():
             "height": 100.0,
             "servo_1_angle": 45,
             "servo_2_angle": 30,
-            "servo_3_angle": 60
+            "servo_3_angle": 60,
         }
     ]
 
@@ -32,7 +33,7 @@ def test_log_new_data():
         with patch("json.dump") as mock_json_dump:
             # Call the logging function
             logger.log_new_data(data)
-            
+
             # Verify the file was opened in write mode
             mock_file_open.assert_called_once_with(file_path, "w")
 

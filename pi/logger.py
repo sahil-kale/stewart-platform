@@ -3,9 +3,10 @@ import json
 
 import os, pty
 
+
 class Logger:
     def __init__(self, file_path):
-        self.file_path = file_path 
+        self.file_path = file_path
 
     # Format used is this:
     # data = [
@@ -26,5 +27,5 @@ class Logger:
     #     }
     # ]
     def log_new_data(self, data):
-        with open(self.file_path, "w") as file: 
+        with open(self.file_path, "w") as file:
             json.dump(data, file, indent=4)
