@@ -60,9 +60,8 @@ void loop() {
     // If the data is valid, update the servo positions.
     if (request.valid) {
         for (uint8_t i = 0; i < NUM_STEPPERS; i++) {
-            if (request.dutyCyclesUs[i] > 0) {
+            if (request.steps[i] != multiStepper.steppers[i].currentStepCount()) {
                 multiStepper.step()
-                servos[i].writeMicroseconds(request.dutyCyclesUs[i]);  // Update servo positions without detaching
             }
         }
     }
