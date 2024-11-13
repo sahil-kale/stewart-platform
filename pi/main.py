@@ -232,29 +232,27 @@ class MainControlLoop:
             )
 
             # Compute the servo angles
-            servo_angles = []
-            duty_cycles = []
+            actuator_angles = []
+            steps = []
             for i in range(len(servo_vectors)):
                 desired_servo_length = np.linalg.norm(servo_vectors[i])
-                servo_angle = self.sk.compute_servo_angle(desired_servo_length)
-                servo_angles.append(servo_angle)
-                duty_cycle = self.pc.compute_duty_cycle_from_angle(
-                    servo_angle[0] + self.servo_offset_radians[i]
+                actuator_angle = self.sk.compute_servo_angle(desired_servo_length)
+                actuator_angles.append(actuator_angle)
+                step = self.pc.compute_steps_from_angle(
+                    actuator_angle[0] + self.servo_offset_radians[i]
                 )
-                duty_cycles.append(duty_cycle)
+                steps.append(step)
 
             # Send the servo angles to the platform
             if not self.virtual:
-                self.pc.write_duty_cycles(
-                    duty_cycles[0], duty_cycles[1], duty_cycles[2]
-                )
+                self.pc.write_steps(steps[0], steps[1], steps[2])
 
             # log the following data to the log file
-            # time, current position, camera valid, desired position, pitch, roll, height, servo angles, duty cycles
+            # time, current position, camera valid, desired position, pitch, roll, height, actuator angles, duty cycles
             # ensure that all data is separated by commas and are converted to strictly numbers
             if not header_written:
                 f.write(
-                    "time,current_position_x,current_position_y,camera_valid,desired_position_x,desired_position_y,pitch,roll,height,servo_angle_1,servo_angle_2,servo_angle_3,duty_cycle_1,duty_cycle_2,duty_cycle_3\n"
+                    "time,current_position_x,current_position_y,camera_valid,desired_position_x,desired_position_y,pitch,roll,height,actuator_angle_1,actuator_angle_2,actuator_angle_3,step_1,step_2,step_3\n"
                 )
                 header_written = True
 
@@ -269,12 +267,12 @@ class MainControlLoop:
                 f"{float(pitch_rad)},"
                 f"{float(roll_rad)},"
                 f"{float(height)},"
-                f"{float(servo_angles[0][0])},"
-                f"{float(servo_angles[1][0])},"
-                f"{float(servo_angles[2][0])},"
-                f"{float(duty_cycles[0])},"
-                f"{float(duty_cycles[1])},"
-                f"{float(duty_cycles[2])}\n"
+                f"{float(actuator_angles[0][0])},"
+                f"{float(actuator_angles[1][0])},"
+                f"{float(actuator_angles[2][0])},"
+                f"{float(steps[0])},"
+                f"{float(steps[1])},"
+                f"{float(steps[2])}\n"
             )
 
             time_elapsed = time.time() - time_since_start
@@ -286,7 +284,7 @@ class MainControlLoop:
                 pause_time = 0
             # Update visualization if enabled
             if self.run_visualizer:
-                self.visualizer.update(platform_points_in_base_frame, servo_angles)
+                self.visualizer.update(platform_points_in_base_frame, actuator_angles)
                 # Redraw the figure
                 plt.pause(pause_time)
             elif self.tune_controller:
