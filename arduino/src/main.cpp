@@ -10,10 +10,12 @@ uint8_t stepPins[] = {9, 10, 11};
 uint8_t dirPins[] = {1, 2, 3};
 uint8_t limitSwitchPin[] = {4, 5, 6};
 
-constexpr stepsPerRevolution = 20000; // Arbitrary rn
+constexpr float US_PER_SECOND = 1000000.0;
 
 IndividualStepper steppers[NUM_STEPPERS];
 MultiStepper multiStepper;
+
+uint32_t time_of_last_loop_micros = 0;
 
 void setup() {
     // Initialize the serial communication
@@ -60,9 +62,11 @@ void loop() {
     // If the data is valid, update the servo positions.
     if (request.valid) {
         for (uint8_t i = 0; i < NUM_STEPPERS; i++) {
-            if (request.steps[i] != multiStepper.steppers[i].currentStepCount()) {
-                multiStepper.step()
-            }
+            multiStepper.steppers[i].updateTargetStepCount(request.steps[i]);
         }
     }
+
+    time_of_last_loop_micros = micros() - time_of_last_loop_micros;
+    // Run the step function
+    multiStepper.step(time_of_last_loop_micros / US_PER_SECOND);
 }

@@ -31,6 +31,10 @@ class MultiStepper
             pinMode(limitSwitchPin, INPUT);
         }
 
+        void updateTargetStepCount(uint32_t newTargetStepCount) {
+          this->targetStepCount = newTargetStepCount;
+        }
+
         uint32_t targetStepCount;
         uint32_t currentStepCount;
 
