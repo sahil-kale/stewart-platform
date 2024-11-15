@@ -13,7 +13,7 @@ class MultiStepper
     class IndividualStepper {
         public:
         IndividualStepper() : stepPin(0), dirPin(0), limitSwitchPin(0), steps_per_second(0) {}
-        IndividualStepper(uint8_t stepPin, uint8_t dirPin, uint8_t limitSwitchPin, uint16_t stepsPerRevolution, float rpm)
+        IndividualStepper(uint8_t stepPin, uint8_t dirPin, uint8_t limitSwitchPin, float stepsPerSecond)
         {
             this->stepPin = stepPin;
             this->dirPin = dirPin;
@@ -21,7 +21,7 @@ class MultiStepper
             this->currentStepCount = 0;
             this->limitSwitchPin = limitSwitchPin;
             this->homed = false;
-            this->steps_per_second = (rpm / 60.0) * stepsPerRevolution;
+            this->steps_per_second = stepsPerSecond;
         }
 
         void init()

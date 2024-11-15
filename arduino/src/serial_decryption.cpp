@@ -18,8 +18,8 @@ PlatformControlRequest decryptSerialData(const char* serialData, size_t serialDa
     for (size_t i = 0; i < NUM_STEPPERS; i++)
     {
         // Format expected is little endian uint16_t (2 bytes per duty cycle)
-        request.dutyCyclesUs[i] = (uint16_t)(unsigned char)serialData[i * 2] | ((uint16_t)(unsigned char)serialData[i * 2 + 1] << 8);
-        checksum += request.dutyCyclesUs[i];
+        request.steps[i] = (uint16_t)(unsigned char)serialData[i * 2] | ((uint16_t)(unsigned char)serialData[i * 2 + 1] << 8);
+        checksum += request.steps[i];
     }
 
     // Extract the checksum - little endian uint32_t (4 bytes)

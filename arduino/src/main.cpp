@@ -11,8 +11,10 @@ uint8_t dirPins[] = {1, 2, 3};
 uint8_t limitSwitchPin[] = {4, 5, 6};
 
 constexpr float US_PER_SECOND = 1000000.0;
+constexpr uint32_t stepsPerSecond = (20000/4.0) / 0.03;
+constexpr float rpm = 1 / (0.03 * 4);
 
-IndividualStepper steppers[NUM_STEPPERS];
+MultiStepper::IndividualStepper steppers[NUM_STEPPERS];
 MultiStepper multiStepper;
 
 uint32_t time_of_last_loop_micros = 0;
@@ -23,7 +25,7 @@ void setup() {
 
     // Instantiate stepper objects at once
     for (uint8_t i = 0; i < NUM_STEPPERS; i++) {
-        steppers[i] = IndividualStepper(stepPins[i], dirPins[i], stepsPerRevolution);
+        steppers[i] = MultiStepper::IndividualStepper(stepPins[i], dirPins[i], limitSwitchPin[i], stepsPerSecond);
         multiStepper.addStepper(steppers[i]);
     } 
 
