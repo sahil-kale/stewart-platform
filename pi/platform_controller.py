@@ -11,7 +11,7 @@ class PlatformController:
     def __init__(
         self,
         port,
-        baudrate=9600,
+        baudrate=256000,
         degrees_per_step=1.8,
         debug: bool = False,
     ):

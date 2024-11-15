@@ -4,6 +4,7 @@ import glob
 from point import Point
 import json
 import subprocess
+import time
 
 
 class Camera:
@@ -15,11 +16,11 @@ class Camera:
         self.v = v
 
         self.static_height_m = (
-            (13) * 2.54 / 100
+            (10) * 2.54 / 100
         )  # height of the camera from the ground in meters
 
         # Used to a mask where we reject any input that is not within the circular platform
-        self.ball_platform_radius_px = 270
+        self.ball_platform_radius_px = 290
 
         # Set camera object and port
         self.port = port
@@ -42,6 +43,9 @@ class Camera:
         self.set_camera_saturation(99)
         self.set_auto_white_balance(1)
         self.set_camera_hue(100)
+
+        # set fps to 30
+        self.cam.set(cv.CAP_PROP_FPS, 30)
 
     def set_camera_brightness(self, brightness):
         # Set camera brightness
@@ -145,7 +149,12 @@ class Camera:
 
     def get_ball_coordinates(self):
         # Get the coordinates of the ball
+        time_now = time.time()
         ret, frame = self.cam.read()
+        time_after_read = time.time()
+
+        if self.debug:
+            print(f"Time to read frame: {time_after_read - time_now}")
         coords = self.detect_ball(frame)
         if coords:
             return self.pixel_to_world_coords(coords.x, coords.y, self.static_height_m)
@@ -195,14 +204,28 @@ class Camera:
         )
         # Draw detected circles on the original image
         circle_coords = None
+        largest_circle_radius = 0
         if circles is not None:
             circles = np.round(circles[0, :]).astype("int")
             for x, y, r in circles:
-                cv.circle(frame, (x, y), r, (0, 255, 0), 4)
-                cv.rectangle(frame, (x - 5, y - 5), (x + 5, y + 5), (0, 128, 255), -1)
+                if r > largest_circle_radius:
+                    largest_circle_radius = r
+                    circle_coords = Point(x, y)
 
-                # Get the coordinates of the detected circle
-                circle_coords = Point(x, y)
+            cv.circle(
+                frame,
+                (circle_coords.x, circle_coords.y),
+                largest_circle_radius,
+                (0, 255, 0),
+                4,
+            )
+            cv.rectangle(
+                frame,
+                (circle_coords.x - 5, circle_coords.y - 5),
+                (circle_coords.x + 5, circle_coords.y + 5),
+                (0, 128, 255),
+                -1,
+            )
 
         if self.debug:
             # Show the masked and result image

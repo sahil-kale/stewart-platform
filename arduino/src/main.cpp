@@ -21,7 +21,7 @@ uint32_t time_of_last_loop_micros = 0;
 
 void setup() {
     // Initialize the serial communication
-    Serial.begin(9600);
+    Serial.begin(256000);
 
     // Instantiate stepper objects at once
     for (uint8_t i = 0; i < NUM_STEPPERS; i++) {

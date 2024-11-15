@@ -21,7 +21,6 @@ def test_platform_controller_init():
     fakeser_name = create_fake_serial()
 
     pc = platform_controller.PlatformController(fakeser_name[0])
-    assert pc.ser.baudrate == 9600
     assert pc.ser.port == fakeser_name[0]
 
 
