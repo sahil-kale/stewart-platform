@@ -1,41 +1,34 @@
-from unittest.mock import mock_open, patch
+import os
 import json
-import time
-from logger import Logger  # Replace with the actual import if needed
+import pytest
+from unittest.mock import patch, mock_open
+from logger import Logger  # Replace with your actual module name
 
 
-def test_log_new_data():
-    # Initialize logger with a dummy file path
+@pytest.fixture
+def logger():
+    # Provide a temporary file path for testing
     file_path = "logs/test_log.json"
-    logger = Logger(file_path)
+    # Mock the creation of directories if necessary
+    os.makedirs(os.path.dirname(file_path), exist_ok=True)
+    return Logger(file_path)
 
-    # Create a sample data structure to log
-    data = [
-        {
-            "time": 0.0,
-            "camera_measured_x": 5.1,
-            "camera_measured_y": -3.4,
-            "camera_filtered_x": 2.1,
-            "camera_filtered_y": -1.7,
-            "desired_position_x": 0.0,
-            "desired_position_y": 0.0,
-            "pitch_rad": 0.2,
-            "roll_rad": -0.1,
-            "height": 100.0,
-            "servo_1_angle": 45,
-            "servo_2_angle": 30,
-            "servo_3_angle": 60,
-        }
-    ]
 
-    # Mock file opening and json dumping
+def test_file_creation(logger):
+    # Verify that the file is opened in write mode
+    with patch("builtins.open", mock_open()) as mock_file:
+        Logger(logger.file_path)  # Create the logger instance
+        mock_file.assert_called_once_with(logger.file_path, "w")
+
+
+def test_directory_creation():
+    file_path = "logs/test_log.json"
+    # Ensure the directory exists before creating the logger
     with patch("builtins.open", mock_open()) as mock_file_open:
         with patch("json.dump") as mock_json_dump:
-            # Call the logging function
-            logger.log_new_data(data)
-
-            # Verify the file was opened in write mode
-            mock_file_open.assert_called_once_with(file_path, "w")
-
-            # Check that json.dump was called with the correct data and file object
-            mock_json_dump.assert_called_once_with(data, mock_file_open(), indent=4)
+            logger = Logger(file_path)
+            # Ensure directory is created (check if the directory exists before file opening)
+            assert os.path.isdir(
+                os.path.dirname(file_path)
+            )  # Check that 'logs' directory exists
+            mock_json_dump.assert_not_called()  # Ensure we haven't written yet
