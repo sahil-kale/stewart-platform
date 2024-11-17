@@ -5,7 +5,7 @@
 #include <Arduino.h>
 
 #define NUM_STEPPERS 3U
-#define STEP_DELAY_US 1U
+#define STEP_DELAY_US 5U
 
 class MultiStepper
 {
@@ -20,7 +20,7 @@ class MultiStepper
             this->targetStepCount = 0;
             this->currentStepCount = 0;
             this->limitSwitchPin = limitSwitchPin;
-            this->homed = false;
+            this->homed = true;
             this->steps_per_second = stepsPerSecond;
         }
 
@@ -28,15 +28,15 @@ class MultiStepper
         {
             pinMode(stepPin, OUTPUT);
             pinMode(dirPin, OUTPUT);
-            pinMode(limitSwitchPin, INPUT);
+            pinMode(limitSwitchPin, INPUT_PULLUP);
         }
 
-        void updateTargetStepCount(uint32_t newTargetStepCount) {
+        void updateTargetStepCount(int newTargetStepCount) {
           this->targetStepCount = newTargetStepCount;
         }
 
-        uint32_t targetStepCount;
-        uint32_t currentStepCount;
+        int targetStepCount;
+        int currentStepCount;
 
         uint8_t stepPin;
         uint8_t dirPin;
@@ -71,62 +71,79 @@ class MultiStepper
     {
         for (uint8_t i = 0; i < NUM_STEPPERS; i++)
         {
-            steppers[i].targetStepCount = -99999;
+            steppers[i].targetStepCount = -9999;
         }
     }
 
     void step(float dt)
     {
-        for (uint8_t i = 0; i < NUM_STEPPERS; i++)
-        {
-            IndividualStepper& stepper = steppers[i];
-            if (stepper.targetStepCount != stepper.currentStepCount)
-            {
-                float stepCountMultiplier = 1.0;
-                if (stepper.targetStepCount > stepper.currentStepCount)
-                {
-                    digitalWrite(stepper.dirPin, HIGH);
-                    stepCountMultiplier = 1.0;
-                }
-                else
-                {
-                    digitalWrite(stepper.dirPin, LOW);
-                    stepCountMultiplier = -1.0;
-                }
+        IndividualStepper &stepper = steppers[0];
+        // if (stepper.targetStepCount != stepper.currentStepCount) {
+        //   digitalWrite(steppers[0].stepPin, HIGH);
+        //   delayMicroseconds(10);
+        //   digitalWrite(steppers[0].stepPin, LOW);
+        //   delayMicroseconds(600);
+        // }
+        for (uint8_t i = 0; i < 1; i++) {
+          IndividualStepper& stepper = steppers[i];
+          if (stepper.targetStepCount != stepper.currentStepCount)
+          {
+              float stepCountMultiplier = 1.0;
+              if (stepper.targetStepCount > stepper.currentStepCount)
+              {
+                  digitalWrite(stepper.dirPin, HIGH);
+                  stepCountMultiplier = 1.0;
+              }
+              else
+              {
+                  digitalWrite(stepper.dirPin, LOW);
+                  stepCountMultiplier = -1.0;
+              }
 
-                if (stepper.homed)
-                {
-                    stepper.time_since_last_step += dt;
-                    if (stepper.time_since_last_step >= 1.0 / stepper.steps_per_second)
-                    {
-                        stepper.time_since_last_step = 0.0;
-                        stepper.currentStepCount += stepCountMultiplier;
-                        digitalWrite(stepper.stepPin, HIGH);
-                        delayMicroseconds(STEP_DELAY_US);
-                        digitalWrite(stepper.stepPin, LOW);
+              if (stepper.homed)
+              {
+                  stepper.time_since_last_step += dt;
+                  if (stepper.time_since_last_step >= 0.0006)
+                  {
+                      stepper.time_since_last_step = 0.0;
+                      stepper.currentStepCount += stepCountMultiplier;
+                      digitalWrite(stepper.stepPin, HIGH);
+                      delayMicroseconds(STEP_DELAY_US);
+                      digitalWrite(stepper.stepPin, LOW);
+                  }
+                  if (digitalRead(stepper.limitSwitchPin) == LOW) {
+                    stepper.homed = true;
+                    stepper.currentStepCount = 0;
+                    if (stepper.targetStepCount < 0) {
+                        stepper.targetStepCount = 0;
                     }
-                }
-                else
-                {
-                    if (digitalRead(stepper.limitSwitchPin) == HIGH)
-                    {
-                        stepper.homed = true;
-                        stepper.currentStepCount = 0;
+                  }
+              }
+              else
+              {
+                  if (digitalRead(stepper.limitSwitchPin) == LOW)
+                  {
+                      stepper.homed = true;
+                      stepper.currentStepCount = 0;
+                      if (stepper.targetStepCount < 0) {
+                        stepper.targetStepCount = 0;
+                      }
+                  }
+                  else
+                  {
+                    if (stepper.time_since_last_step >= 0.0006) {
+                      stepper.currentStepCount += stepCountMultiplier;
+                      digitalWrite(stepper.stepPin, HIGH);
+                      delayMicroseconds(STEP_DELAY_US);
+                      digitalWrite(stepper.stepPin, LOW);
                     }
-                    else
-                    {
-                        stepper.currentStepCount += stepCountMultiplier;
-                        digitalWrite(stepper.stepPin, HIGH);
-                        delayMicroseconds(STEP_DELAY_US);
-                        digitalWrite(stepper.stepPin, LOW);
-                    }
-                }
-            }
-        }
+                  }
+              }
+          }
+      }
     }
 
     uint8_t num_steppers = 0;
-
 
 };
 
