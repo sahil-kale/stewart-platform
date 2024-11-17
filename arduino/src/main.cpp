@@ -13,10 +13,8 @@ uint8_t limitSwitchPin[] = {7, 5, 6};
 bool homingOrientation[] = {0, 0, 0};
 
 constexpr float US_PER_SECOND = 1000000.0;
-constexpr uint32_t stepsPerSecond = (20000/4.0) / 0.03;
-constexpr float rpm = 1 / (0.03 * 4);
 
-MultiStepper::IndividualStepper steppers[NUM_STEPPERS];
+// MultiStepper::IndividualStepper steppers[NUM_STEPPERS];
 MultiStepper multiStepper;
 
 uint32_t time_of_last_loop_micros = 0;
@@ -26,11 +24,17 @@ bool serial_received = false;
 void setup() {
     // Initialize the serial communication
     Serial.begin(921600);
-
+    
     // Instantiate stepper objects at once - all our motors are oriented as CW to home
     for (uint8_t i = 0; i < NUM_STEPPERS; i++) {
-        steppers[i] = MultiStepper::IndividualStepper(stepPins[i], dirPins[i], limitSwitchPin[i], stepsPerSecond, homingOrientation[i]);
-        multiStepper.addStepper(steppers[i]);
+      MultiStepper::IndividualStepper stepper = MultiStepper::IndividualStepper(
+        stepPins[i], 
+        dirPins[i], 
+        limitSwitchPin[i], 
+        homingOrientation[i]
+      );
+
+      multiStepper.addStepper(stepper);
     } 
 
     multiStepper.home();
@@ -69,7 +73,6 @@ void loop() {
             for (uint8_t i = 0; i < NUM_STEPPERS; i++) {
                 multiStepper.steppers[i].updateTargetStepCount(request.steps[i]);
             }
-            Serial.println(request.steps[0]);
         }
     }
 

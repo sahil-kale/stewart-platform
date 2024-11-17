@@ -4,7 +4,7 @@
 #include <stdint.h>
 #include <Arduino.h>
 
-#define NUM_STEPPERS 3U
+#define MAX_NUM_STEPPERS 3U
 #define STEP_DELAY_US 5U
 
 constexpr float HOMING_TIME_DELAY = 0.01;
@@ -15,16 +15,14 @@ public:
   class IndividualStepper {
   public:
     IndividualStepper()
-        : stepPin(0), dirPin(0), limitSwitchPin(0), steps_per_second(0) {}
-    IndividualStepper(uint8_t stepPin, uint8_t dirPin, uint8_t limitSwitchPin,
-                      float stepsPerSecond, bool ccw_for_homing=true) {
+        : stepPin(0), dirPin(0), limitSwitchPin(0) {}
+    IndividualStepper(uint8_t stepPin, uint8_t dirPin, uint8_t limitSwitchPin, bool ccw_for_homing=true) {
       this->stepPin = stepPin;
       this->dirPin = dirPin;
       this->targetStepCount = 0;
       this->currentStepCount = 0;
       this->limitSwitchPin = limitSwitchPin;
       this->homed = false;
-      this->steps_per_second = stepsPerSecond;
       this->ccw_for_homing = ccw_for_homing;
     }
 
@@ -48,16 +46,15 @@ public:
     uint8_t dirPin;
     uint8_t limitSwitchPin;
     bool homed = false;
-    float steps_per_second;
     bool ccw_for_homing;
 
     float time_since_last_step = 0.0;
   };
 
-  IndividualStepper steppers[NUM_STEPPERS];
+  IndividualStepper steppers[MAX_NUM_STEPPERS];
 
-  MultiStepper(IndividualStepper steppers[NUM_STEPPERS]) {
-    for (uint8_t i = 0; i < NUM_STEPPERS; i++) {
+  MultiStepper(IndividualStepper steppers[MAX_NUM_STEPPERS]) {
+    for (uint8_t i = 0; i < MAX_NUM_STEPPERS; i++) {
       this->steppers[i] = steppers[i];
       this->steppers[i].init();
     }
@@ -66,14 +63,14 @@ public:
   MultiStepper() {}
 
   void addStepper(IndividualStepper &stepper) {
-    if (num_steppers < NUM_STEPPERS) {
+    if (num_steppers < MAX_NUM_STEPPERS) {
       steppers[num_steppers] = stepper;
     }
     num_steppers++;
   }
 
   void home() {
-    for (uint8_t i = 0; i < NUM_STEPPERS; i++) {
+    for (uint8_t i = 0; i < num_steppers; i++) {
       steppers[i].targetStepCount = -9999;
     }
   }
