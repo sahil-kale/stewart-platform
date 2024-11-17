@@ -11,7 +11,7 @@ class PlatformController:
     def __init__(
         self,
         port,
-        baudrate=256000,
+        baudrate=921600,
         degrees_per_step=1.8,
         debug: bool = False,
     ):
@@ -36,7 +36,7 @@ class PlatformController:
 
     def compute_steps_from_angle(self, actuator_angle):
         percentage = actuator_angle / np.pi
-        total_steps = 90.0 / self.degrees_per_step
+        total_steps = 180.0 / self.degrees_per_step
         return (int)(percentage * total_steps)
 
     def write_steps(self, steps_1, steps_2, steps_3):
@@ -80,9 +80,10 @@ if __name__ == "__main__":
         # Ask the user for the duty cycle (use the same one for all 3)
         try:
             actuator_angle_deg = int(input("Enter the desired angle in degrees: "))
-            actuator_angle_deg = np.deg2rad(actuator_angle_deg)
-            steps = pc.compute_steps_from_angle(actuator_angle_deg)
+            actuator_angle_rad = np.deg2rad(actuator_angle_deg)
+            steps = pc.compute_steps_from_angle(actuator_angle_rad)
             # Write the duty cycle to the platform
+            print(steps)
             pc.write_steps(steps, steps, steps)
             time.sleep(0.1)  # Wait briefly for the microcontroller to respond
             pc.read_serial_output()  # Read and print the serial output

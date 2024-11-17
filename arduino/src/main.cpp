@@ -9,6 +9,8 @@
 uint8_t stepPins[] = {3, 10, 11};
 uint8_t dirPins[] = {4, 2, 1};
 uint8_t limitSwitchPin[] = {7, 5, 6};
+// All the motors are currently set as CW to home (0 = CW to home, 1 = CCW to home)
+bool homingOrientation[] = {0, 0, 0};
 
 constexpr float US_PER_SECOND = 1000000.0;
 constexpr uint32_t stepsPerSecond = (20000/4.0) / 0.03;
@@ -19,16 +21,15 @@ MultiStepper multiStepper;
 
 uint32_t time_of_last_loop_micros = 0;
 
+bool serial_received = false;
+
 void setup() {
     // Initialize the serial communication
-    Serial.begin(115200);
+    Serial.begin(921600);
 
-    // pinMode(3, OUTPUT);
-    // pinMode(4, OUTPUT);
-
-    // Instantiate stepper objects at once
+    // Instantiate stepper objects at once - all our motors are oriented as CW to home
     for (uint8_t i = 0; i < NUM_STEPPERS; i++) {
-        steppers[i] = MultiStepper::IndividualStepper(stepPins[i], dirPins[i], limitSwitchPin[i], stepsPerSecond);
+        steppers[i] = MultiStepper::IndividualStepper(stepPins[i], dirPins[i], limitSwitchPin[i], stepsPerSecond, homingOrientation[i]);
         multiStepper.addStepper(steppers[i]);
     } 
 
@@ -52,7 +53,7 @@ void loop() {
         
 #ifdef DEBUG
         if (request.valid) {
-            Serial.print("Steps: ");
+            serial_received = true;
             for (uint8_t i = 0; i < NUM_STEPPERS; i++) {
                 Serial.print(request.steps[i]);
                 Serial.print(" ");
@@ -62,31 +63,20 @@ void loop() {
             Serial.println("Invalid data received.");
         }
 #endif
-    }
 
-    // If the data is valid, update the servo positions.
-    if (request.valid) {
-        for (uint8_t i = 0; i < NUM_STEPPERS; i++) {
-            // multiStepper.steppers[i].updateTargetStepCount(request.steps[i]);
-            multiStepper.steppers[i].updateTargetStepCount(99999);
+        if (request.valid) {
+            serial_received = true;
+            for (uint8_t i = 0; i < NUM_STEPPERS; i++) {
+                multiStepper.steppers[i].updateTargetStepCount(request.steps[i]);
+            }
+            Serial.println(request.steps[0]);
         }
     }
-    
+
     uint32_t current_time = micros();
     float dt = (current_time - time_of_last_loop_micros);
     time_of_last_loop_micros = current_time;
     // Run the step function
     dt = dt / US_PER_SECOND;
     multiStepper.step(dt);
-    Serial.println(digitalRead(multiStepper.steppers[0].limitSwitchPin));
-    // Serial.println(multiStepper.steppers[0].targetStepCount);
-    // Serial.println(multiStepper.steppers[0].currentStepCount);
-    // digitalWrite(steppers[0].stepPin, HIGH);
-    // delayMicroseconds(10);
-    // digitalWrite(steppers[0].stepPin, LOW);
-    // delayMicroseconds(600);
-
-    // digitalWrite(3, HIGH);
-    // digitalWrite(3, LOW);
-    // delayMicroseconds(600);
 }
