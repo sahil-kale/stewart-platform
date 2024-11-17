@@ -53,13 +53,6 @@ public:
 
   IndividualStepper steppers[MAX_NUM_STEPPERS];
 
-  MultiStepper(IndividualStepper steppers[MAX_NUM_STEPPERS]) {
-    for (uint8_t i = 0; i < MAX_NUM_STEPPERS; i++) {
-      this->steppers[i] = steppers[i];
-      this->steppers[i].init();
-    }
-  }
-
   MultiStepper() {}
 
   void addStepper(IndividualStepper &stepper) {
@@ -76,7 +69,7 @@ public:
   }
 
   void step(float dt) {
-    for (uint8_t i = 0; i < 1; i++) {
+    for (uint8_t i = 0; i < num_steppers; i++) {
       IndividualStepper &stepper = steppers[i];
       if (stepper.targetStepCount != stepper.currentStepCount) {
         float stepCountMultiplier = 1.0;
@@ -99,13 +92,7 @@ public:
             delayMicroseconds(STEP_DELAY_US);
             digitalWrite(stepper.stepPin, LOW);
           }
-          if (digitalRead(stepper.limitSwitchPin) == LOW) {
-            stepper.homed = true;
-            stepper.currentStepCount = 0;
-            if (stepper.targetStepCount < 0) {
-              stepper.targetStepCount = 0;
-            }
-          }
+
         } else {
           if (digitalRead(stepper.limitSwitchPin) == LOW) {
             stepper.homed = true;
