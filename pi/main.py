@@ -45,7 +45,7 @@ class MainControlLoop:
             "la": 122.2 / 1000,
             "platform_attachment_radius": 70 / 1000,
             "base_attachment_radius": 100 / 1000,
-            "resting_height": 0.17,
+            "resting_height": 0.15,
         }
 
         self.servo_offset_radians = [

@@ -35,7 +35,7 @@ class Camera:
         self.OPEN_CV_DELAY = 100
         self.frameSize = (u, v)
         self.cameraMatrix = np.zeros((3, 3), dtype=np.float32)
-        self.lower_color = np.array([35, 50, 100], dtype=np.uint8)
+        self.lower_color = np.array([35, 150, 100], dtype=np.uint8)
         self.upper_color = np.array([85, 255, 255], dtype=np.uint8)
 
         self.set_camera_brightness(50)
@@ -168,6 +168,10 @@ class Camera:
         frame = cv.resize(image, (self.u, self.v))
         hsv = cv.cvtColor(frame, cv.COLOR_BGR2HSV)
 
+        h, s, v = cv.split(hsv)
+        v = cv.equalizeHist(v)
+        hsv = cv.merge([h, s, v])
+
         center_x, center_y = frame.shape[1] // 2, frame.shape[0] // 2
         circular_mask = np.zeros((frame.shape[0], frame.shape[1]), dtype=np.uint8)
         cv.circle(
@@ -250,7 +254,7 @@ class Camera:
             [camera_coords[0][0][0], camera_coords[0][0][1], height_m]
         )
 
-        rad_to_rotate_z = np.pi / 2
+        rad_to_rotate_z = np.pi * 0/2
         rot_Z = np.array(
             [
                 [np.cos(rad_to_rotate_z), -np.sin(rad_to_rotate_z), 0],

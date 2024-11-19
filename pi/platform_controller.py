@@ -13,6 +13,9 @@ class PlatformController:
         port,
         baudrate=921600,
         degrees_per_step=1.8,
+        microstep_factor=2,
+        min_degree_rad=(5 * np.pi / 180),
+        max_degree_rad=(85 * np.pi / 180),
         debug: bool = False,
     ):
         # Min and max duty cycles translate to 0 to 180 degrees on the servo
@@ -20,7 +23,9 @@ class PlatformController:
         self.port = port
         self.ser = serial.Serial(port, baudrate)
 
-        self.degrees_per_step = degrees_per_step
+        self.degrees_per_step = degrees_per_step / microstep_factor
+        self.min_degree_rad = min_degree_rad
+        self.max_degree_rad = max_degree_rad
 
         self.debug = debug
 
@@ -35,7 +40,11 @@ class PlatformController:
         self.ser.write(data)
 
     def compute_steps_from_angle(self, actuator_angle):
-        percentage = actuator_angle / np.pi
+        # saturate the angle to the min 
+        if actuator_angle < self.min_degree_rad:
+            actuator_angle = self.min_degree_rad
+
+        percentage = 1 - actuator_angle / np.pi
         total_steps = 180.0 / self.degrees_per_step
         return (int)(percentage * total_steps)
 

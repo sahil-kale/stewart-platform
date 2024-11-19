@@ -8,7 +8,7 @@
 #define STEP_DELAY_US 5U
 
 constexpr float HOMING_TIME_DELAY = 0.01;
-constexpr float NORMAL_OPERATIONS_TIME_DELAY = 0.0006;
+constexpr float NORMAL_OPERATIONS_TIME_DELAY = 0.007;
 
 class MultiStepper {
 public:
@@ -91,6 +91,11 @@ public:
             digitalWrite(stepper.stepPin, HIGH);
             delayMicroseconds(STEP_DELAY_US);
             digitalWrite(stepper.stepPin, LOW);
+          }
+
+          if (digitalRead(stepper.limitSwitchPin) == LOW) {
+            stepper.homed = true;
+            stepper.currentStepCount = 0;
           }
 
         } else {
