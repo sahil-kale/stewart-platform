@@ -9,7 +9,7 @@ Servo servos[NUM_SERVOS];  // Array to hold servo objects
 
 void setup() {
     // Initialize the serial communication
-    Serial.begin(256000);
+    Serial.begin(921600);
 
     // Attach servos to the appropriate pins once during setup
     for (uint8_t i = 0; i < NUM_SERVOS; i++) {
