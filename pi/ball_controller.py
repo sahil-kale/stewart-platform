@@ -61,9 +61,9 @@ class BallController:
         derivative_error = (error - previous_error) / self.dt
 
         # PID formula
-        output = kp * error + kd * derivative_error
-        # if (np.abs(error) > 0.02):
-        output = output + ki * integral_error
+
+        output = kp * error + kd * derivative_error + ki * integral_error
+
         if np.abs(ki * integral_error) > 0.05:
             if output < 0:
                 output = output - 0.007
@@ -121,7 +121,7 @@ class BallController:
             euclidean_error, [0, self.max_euclidean_error], self.kp_range_x
         )
         self.current_ki_x = np.interp(
-            euclidean_error, [0, self.max_euclidean_error], self.ki_range_x
+            euclidean_error, self.ki_range_x[1], self.ki_range_x[0]
         )
         self.current_kd_x = np.interp(
             euclidean_error, [0, self.max_euclidean_error], self.kd_range_x
@@ -131,7 +131,7 @@ class BallController:
             euclidean_error, [0, self.max_euclidean_error], self.kp_range_y
         )
         self.current_ki_y = np.interp(
-            euclidean_error, [0, self.max_euclidean_error], self.ki_range_y
+            euclidean_error, self.ki_range_y[1], self.ki_range_y[0]
         )
         self.current_kd_y = np.interp(
             euclidean_error, [0, self.max_euclidean_error], self.kd_range_y
