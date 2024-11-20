@@ -103,6 +103,7 @@ class MainControlLoop:
             integral_windup_clear_threshold=10,
             stiction_compensation_deadband=0.005,
             stiction_compensation_feedforward=0.00,
+            integral_clear_threshold=0.20,
         )
 
         self.run_visualizer = run_visualizer

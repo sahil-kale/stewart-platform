@@ -18,6 +18,7 @@ class BallController:
         integral_windup_clear_threshold,
         stiction_compensation_deadband,
         stiction_compensation_feedforward,
+        integral_clear_threshold,
     ):
         # X-axis PID parameter range
         self.kp_range_x = kp_x
@@ -40,6 +41,8 @@ class BallController:
 
         # Max integral error before clearing, to prevent against windup
         self.integral_windup_clear_threshold = integral_windup_clear_threshold
+
+        self.integral_clear_threshold = integral_clear_threshold
 
         # Initialize errors for x and y
         self.integral_error_x = 0
@@ -86,6 +89,10 @@ class BallController:
         error_y = -error_y
 
         error_euclidean = math.sqrt(error_x**2 + error_y**2)
+
+        if error_euclidean > self.integral_clear_threshold:
+            self.integral_error_x = 0
+            self.integral_error_y = 0
 
         # Interpolate between inner and outer gains to get current gains
         self.update_instantaneous_gains(error_euclidean)
