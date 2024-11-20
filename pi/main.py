@@ -85,7 +85,7 @@ class MainControlLoop:
         )
 
         kp_range = [1.0, 2.0]
-        ki_range = [2.5, 0.0]
+        ki_range = [2.2, 0.0]
         kd_range = [0.65, 0.65]
         self.ball_controller = BallController(
             kp_range,
