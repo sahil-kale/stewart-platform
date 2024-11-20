@@ -30,6 +30,7 @@ class MainControlLoop:
         serial_port: str,
         camera_port: str,
         servo_offsets: list[float] = [0, 0, 0],  # degrees
+        platform_offset: list[float] = [-4, -4],  # degrees
         virtual: bool = False,
         camera_debug: bool = False,
         run_visualizer: bool = False,
@@ -38,8 +39,8 @@ class MainControlLoop:
         cam_color_mask_detect: bool = False,
         cam_calibration_images: bool = False,
     ):
-        self.dt = 0.035
-        self.saturate_angle = 25
+        self.dt = 0.02
+        self.saturate_angle = 6
         self.params = {
             "lh": 67.5 / 1000,
             "la": 122.2 / 1000,
@@ -52,6 +53,11 @@ class MainControlLoop:
             np.radians(servo_offsets[0]),
             np.radians(servo_offsets[1]),
             np.radians(servo_offsets[2]),
+        ]
+
+        self.platform_offset_radians = [
+            np.radians(platform_offset[0]),
+            np.radians(platform_offset[1]),
         ]
 
         attachment_points_structure = [
@@ -78,9 +84,9 @@ class MainControlLoop:
             - self.params["platform_attachment_radius"],
         )
 
-        kp = 0.6
+        kp = 1.0
         ki = 0.0
-        kd = 0.75
+        kd = 0.7
         self.ball_controller = BallController(
             kp,
             ki,
@@ -130,7 +136,7 @@ class MainControlLoop:
             self.cv_system.load_camera_params("pi/camera_calibration_data.json")
 
         self.kalman_filter = KalmanFilter(
-            self.dt, Q=100, R=300
+            self.dt, Q=50, R=00
         )  # Use default params for now
 
         self.current_position = Point(0, 0)
@@ -181,6 +187,7 @@ class MainControlLoop:
             if self.run_controller:
                 if self.virtual is False:
                     current_measurement = self.cv_system.get_ball_coordinates()
+                    time_ball_detected = time.time()
 
                     self.current_position = self.kalman_filter.predict()
 
@@ -188,10 +195,12 @@ class MainControlLoop:
                         self.current_position = self.kalman_filter.update(
                             current_measurement
                         )
+                        self.current_position = current_measurement
                         camera_valid = True
-                        print(
-                            f"Time: {time.time()} | Current position is: {self.current_position} | Measured position is: {current_measurement}"
-                        )
+                        if self.camera_debug:
+                            print(
+                                f"Time: {time.time()} | Current position is: {self.current_position} | Measured position is: {current_measurement}"
+                            )
                     else:
                         if self.camera_debug:
                             print("Ball not detected")
@@ -202,6 +211,7 @@ class MainControlLoop:
                 output_angles = self.ball_controller.run_control_loop(
                     desired_position, self.current_position
                 )
+                time_after_ball_controller = time.time()
 
                 if self.tune_controller:
                     # get slider values
@@ -211,8 +221,8 @@ class MainControlLoop:
 
                     self.ball_controller.set_gains(kp_x, ki_x, kd_x, kp_x, ki_x, kd_x)
 
-                pitch_rad = output_angles[0]
-                roll_rad = output_angles[1]
+                pitch_rad = output_angles[0] + self.platform_offset_radians[0]
+                roll_rad = output_angles[1] + self.platform_offset_radians[1]
                 pkf = PlatformKinematicsFeeder()
                 height = pkf.calculate_desired_platform_height(
                     self.params["resting_height"],
@@ -220,14 +230,18 @@ class MainControlLoop:
                     pitch_rad,
                     roll_rad,
                 )
-                # height = self.params["resting_height"]
+                time_after_platform_kinematics = time.time()
             else:
                 # set the pitch and roll sliders to negative whatever it was before
                 # self.slider_pitch.set_val(-self.slider_pitch.val)
                 # self.slider_roll.set_val(-self.slider_roll.val)
 
-                pitch_rad = np.deg2rad(self.slider_pitch.val)
-                roll_rad = np.deg2rad(self.slider_roll.val)
+                pitch_rad = (
+                    np.deg2rad(self.slider_pitch.val) + self.platform_offset_radians[0]
+                )
+                roll_rad = (
+                    np.deg2rad(self.slider_roll.val) + self.platform_offset_radians[1]
+                )
                 height = self.slider_height.val
 
             # Compute the platform's new attachment points
@@ -238,6 +252,7 @@ class MainControlLoop:
             servo_vectors, platform_points_in_base_frame = skf.compute_servo_vector(
                 platform_points
             )
+            time_after_servo_kinematics = time.time()
 
             # Compute the servo angles
             servo_angles = []
@@ -250,12 +265,14 @@ class MainControlLoop:
                     servo_angle[0] + self.servo_offset_radians[i]
                 )
                 duty_cycles.append(duty_cycle)
+            time_after_duty_cycle_computation = time.time()
 
             # Send the servo angles to the platform
             if not self.virtual:
                 self.pc.write_duty_cycles(
                     duty_cycles[0], duty_cycles[1], duty_cycles[2]
                 )
+                time_after_serial_write = time.time()
 
             # log the following data to the log file
             # time, current position, camera valid, desired position, pitch, roll, height, servo angles, duty cycles
@@ -267,30 +284,32 @@ class MainControlLoop:
                 header_written = True
 
             # write the data to the log file - cast all number values to float
-            f.write(
-                f"{float(time_since_start)},"
-                f"{float(self.current_position.x)},"
-                f"{float(self.current_position.y)},"
-                f"{float(camera_valid)},"
-                f"{float(desired_position.x)},"
-                f"{float(desired_position.y)},"
-                f"{float(pitch_rad)},"
-                f"{float(roll_rad)},"
-                f"{float(height)},"
-                f"{float(servo_angles[0][0])},"
-                f"{float(servo_angles[1][0])},"
-                f"{float(servo_angles[2][0])},"
-                f"{float(duty_cycles[0])},"
-                f"{float(duty_cycles[1])},"
-                f"{float(duty_cycles[2])}\n"
-            )
+            # f.write(
+            #    f"{float(time_since_start)},"
+            #    f"{float(self.current_position.x)},"
+            #    f"{float(self.current_position.y)},"
+            #    f"{float(camera_valid)},"
+            #    f"{float(desired_position.x)},"
+            #    f"{float(desired_position.y)},"
+            #    f"{float(pitch_rad)},"
+            #    f"{float(roll_rad)},"
+            #    f"{float(height)},"
+            #    f"{float(servo_angles[0][0])},"
+            #    f"{float(servo_angles[1][0])},"
+            #    f"{float(servo_angles[2][0])},"
+            #    f"{float(duty_cycles[0])},"
+            #    f"{float(duty_cycles[1])},"
+            #    f"{float(duty_cycles[2])}\n"
+            # )
 
             time_elapsed = time.time() - time_since_start
             pause_time = self.dt - time_elapsed
+
+            # print(f"Time elapsed: {time_elapsed} seconds | Time since ball detected: {time_ball_detected - time_since_start} seconds | Time after platform kinematics: {time_after_platform_kinematics - time_ball_detected} seconds | Time after servo kinematics: {time_after_servo_kinematics - time_after_platform_kinematics} seconds | Time after duty cycle computation: {time_after_duty_cycle_computation - time_after_servo_kinematics} seconds | Time after serial write: {time_after_serial_write - time_after_duty_cycle_computation} seconds")
             if pause_time < 0:
-                print(
-                    f"Loop is taking too long to run! {time_elapsed} seconds, {pause_time} seconds"
-                )
+                # print(
+                #    f"Loop is taking too long to run! {time_elapsed} seconds, {pause_time} seconds"
+                # )
                 pause_time = 0
             # Update visualization if enabled
             if self.run_visualizer:
@@ -358,7 +377,7 @@ if __name__ == "__main__":
 
     run_controller = args.inhibit_controller == False
 
-    servo_offsets = [0, 0, -12]
+    servo_offsets = [-3, 0, 0]
 
     mcl = MainControlLoop(
         args.port,

@@ -26,6 +26,8 @@ class Camera:
         self.port = port
         self.cam = cv.VideoCapture(self.port)
 
+        self.obj_offset = np.array([-0.02, 0, 0])
+
         # Check if camera has been opened before
         if not (self.cam).isOpened():
             print("Camera could not be opened, try again")
@@ -270,6 +272,8 @@ class Camera:
 
         obj_coords_platform_frame = np.dot(rot_Z, obj_coords_cam_frame)
         obj_coords_platform_frame = np.dot(rot_X, obj_coords_platform_frame)
+
+        obj_coords_platform_frame += self.obj_offset
 
         if self.debug:
             print(
