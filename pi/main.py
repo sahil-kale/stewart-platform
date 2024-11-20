@@ -85,9 +85,9 @@ class MainControlLoop:
             - self.params["platform_attachment_radius"],
         )
 
-        kp_range = [1.0, 2.0]
-        ki_range = [[2.5, 0.0], [0, self.params["max_euclidean_distance"]]]
-        kd_range = [0.65, 0.65]
+        kp_range = [1.0, 1.0]
+        ki_range = [[2.2, 0.0], [0, self.params["max_euclidean_distance"]]]
+        kd_range = [0.55, 0.55]
         self.ball_controller = BallController(
             kp_range,
             ki_range,
@@ -100,7 +100,7 @@ class MainControlLoop:
             max_euclidean_error=0.15,
             integral_windup_clear_threshold=10,
             stiction_compensation_deadband=0.005,
-            stiction_compensation_feedforward=0.07,
+            stiction_compensation_feedforward=0.00,
         )
 
         self.run_visualizer = run_visualizer
