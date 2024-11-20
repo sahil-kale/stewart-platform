@@ -30,14 +30,14 @@ class MainControlLoop:
         serial_port: str,
         camera_port: str,
         servo_offsets: list[float] = [0, 0, 0],  # degrees
-        platform_offset: list[float] = [-4, -4],  # degrees
+        platform_offset: list[float] = [0, 0],  # degrees
         virtual: bool = False,
         camera_debug: bool = False,
         run_visualizer: bool = False,
         run_controller: bool = True,
-        tune_controller: bool = False,
         cam_color_mask_detect: bool = False,
         cam_calibration_images: bool = False,
+        print_time_profile: bool = False,
     ):
         self.dt = 0.02
         self.saturate_angle = 12
@@ -109,13 +109,6 @@ class MainControlLoop:
             )
             self.create_kinematic_sliders()
 
-        self.tune_controller = tune_controller
-        if self.tune_controller:
-            plt.figure()
-            # create a GUI with tuning sliders for kp, ki, and kd
-            # for now, even though there are 6 PID gains, we'll just tune the x-axis gains and apply them to y
-            self.create_pid_tuning_sliders()
-
         self.virtual = virtual
 
         if self.virtual:
@@ -138,10 +131,12 @@ class MainControlLoop:
             self.cv_system.load_camera_params("pi/camera_calibration_data.json")
 
         self.kalman_filter = KalmanFilter(
-            self.dt, Q=50, R=00
+            self.dt, Q=50, R=50
         )  # Use default params for now
 
         self.current_position = Point(0, 0)
+
+        self.print_time_profile = print_time_profile
 
     def create_kinematic_sliders(self):
         """Create sliders for pitch, roll, and height"""
@@ -158,16 +153,6 @@ class MainControlLoop:
         self.slider_height = Slider(
             ax_height, "Height", 0.02, 0.2, valinit=self.params["resting_height"]
         )
-
-    def create_pid_tuning_sliders(self):
-        """Create sliders for tuning kp, ki, and kd gains for the x-axis"""
-        ax_kp = plt.axes([0.15, 0.25, 0.65, 0.03], facecolor="lightgoldenrodyellow")
-        ax_ki = plt.axes([0.15, 0.30, 0.65, 0.03], facecolor="lightgoldenrodyellow")
-        ax_kd = plt.axes([0.15, 0.35, 0.65, 0.03], facecolor="lightgoldenrodyellow")
-
-        self.slider_kp = Slider(ax_kp, "Kp", 0.0, 2.0, valinit=1.0)
-        self.slider_ki = Slider(ax_ki, "Ki", 0.0, 2.0, valinit=0.0)
-        self.slider_kd = Slider(ax_kd, "Kd", 0.0, 2.0, valinit=0.0)
 
     def run(self):
         # create a new log file path for the current run with the current time
@@ -214,14 +199,6 @@ class MainControlLoop:
                     desired_position, self.current_position
                 )
                 time_after_ball_controller = time.time()
-
-                if self.tune_controller:
-                    # get slider values
-                    kp_x = self.slider_kp.val
-                    ki_x = self.slider_ki.val
-                    kd_x = self.slider_kd.val
-
-                    # self.ball_controller.set_gains(kp_x, ki_x, kd_x, kp_x, ki_x, kd_x)
 
                 pitch_rad = output_angles[0] + self.platform_offset_radians[0]
                 roll_rad = output_angles[1] + self.platform_offset_radians[1]
@@ -276,49 +253,20 @@ class MainControlLoop:
                 )
                 time_after_serial_write = time.time()
 
-            # log the following data to the log file
-            # time, current position, camera valid, desired position, pitch, roll, height, servo angles, duty cycles
-            # ensure that all data is separated by commas and are converted to strictly numbers
-            if not header_written:
-                f.write(
-                    "time,current_position_x,current_position_y,camera_valid,desired_position_x,desired_position_y,pitch,roll,height,servo_angle_1,servo_angle_2,servo_angle_3,duty_cycle_1,duty_cycle_2,duty_cycle_3\n"
-                )
-                header_written = True
-
-            # write the data to the log file - cast all number values to float
-            # f.write(
-            #    f"{float(time_since_start)},"
-            #    f"{float(self.current_position.x)},"
-            #    f"{float(self.current_position.y)},"
-            #    f"{float(camera_valid)},"
-            #    f"{float(desired_position.x)},"
-            #    f"{float(desired_position.y)},"
-            #    f"{float(pitch_rad)},"
-            #    f"{float(roll_rad)},"
-            #    f"{float(height)},"
-            #    f"{float(servo_angles[0][0])},"
-            #    f"{float(servo_angles[1][0])},"
-            #    f"{float(servo_angles[2][0])},"
-            #    f"{float(duty_cycles[0])},"
-            #    f"{float(duty_cycles[1])},"
-            #    f"{float(duty_cycles[2])}\n"
-            # )
-
             time_elapsed = time.time() - time_since_start
             pause_time = self.dt - time_elapsed
 
-            # print(f"Time elapsed: {time_elapsed} seconds | Time since ball detected: {time_ball_detected - time_since_start} seconds | Time after platform kinematics: {time_after_platform_kinematics - time_ball_detected} seconds | Time after servo kinematics: {time_after_servo_kinematics - time_after_platform_kinematics} seconds | Time after duty cycle computation: {time_after_duty_cycle_computation - time_after_servo_kinematics} seconds | Time after serial write: {time_after_serial_write - time_after_duty_cycle_computation} seconds")
+            if self.print_time_profile:
+                print(
+                    f"Time elapsed: {time_elapsed} seconds | Time since ball detected: {time_ball_detected - time_since_start} seconds | Time after platform kinematics: {time_after_platform_kinematics - time_ball_detected} seconds | Time after servo kinematics: {time_after_servo_kinematics - time_after_platform_kinematics} seconds | Time after duty cycle computation: {time_after_duty_cycle_computation - time_after_servo_kinematics} seconds | Time after serial write: {time_after_serial_write - time_after_duty_cycle_computation} seconds"
+                )
+
             if pause_time < 0:
-                # print(
-                #    f"Loop is taking too long to run! {time_elapsed} seconds, {pause_time} seconds"
-                # )
                 pause_time = 0
             # Update visualization if enabled
             if self.run_visualizer:
                 self.visualizer.update(platform_points_in_base_frame, servo_angles)
                 # Redraw the figure
-                plt.pause(pause_time)
-            elif self.tune_controller:
                 plt.pause(pause_time)
             else:
                 time.sleep(pause_time)
@@ -363,11 +311,6 @@ if __name__ == "__main__":
         action="store_true",
         help="Run the control loop",
     )
-    parser.add_argument(
-        "--tune_controller",
-        action="store_true",
-        help="Run the control loop in tuning mode",
-    )
 
     parser.add_argument(
         "--cam_color_mask_detect",
@@ -375,11 +318,18 @@ if __name__ == "__main__":
         help="Run the camera calibration",
     )
 
+    parser.add_argument(
+        "--print_time_profile",
+        action="store_true",
+        help="Print time profile",
+    )
+
     args = parser.parse_args()
 
     run_controller = args.inhibit_controller == False
 
     servo_offsets = [-3, 0, 0]
+    platform_offset = [-4, -4]  # degrees
 
     mcl = MainControlLoop(
         args.port,
@@ -388,8 +338,9 @@ if __name__ == "__main__":
         camera_debug=args.camera_debug,
         run_visualizer=args.visualize,
         servo_offsets=servo_offsets,
-        tune_controller=args.tune_controller,
+        platform_offset=platform_offset,
         run_controller=run_controller,
         cam_color_mask_detect=args.cam_color_mask_detect,
+        print_time_profile=args.print_time_profile,
     )
     mcl.run()
