@@ -47,6 +47,7 @@ class MainControlLoop:
             "platform_attachment_radius": 70 / 1000,
             "base_attachment_radius": 100 / 1000,
             "resting_height": 0.15,
+            "max_euclidean_distance": 0.15,
         }
 
         self.servo_offset_radians = [
@@ -85,7 +86,7 @@ class MainControlLoop:
         )
 
         kp_range = [1.0, 2.0]
-        ki_range = [2.2, 0.0]
+        ki_range = [[2.5, 0.0], [0, self.params["max_euclidean_distance"]]]
         kd_range = [0.65, 0.65]
         self.ball_controller = BallController(
             kp_range,
@@ -184,10 +185,6 @@ class MainControlLoop:
                         )
                         self.current_position = current_measurement
                         camera_valid = True
-                        if self.camera_debug:
-                            print(
-                                f"Time: {time.time()} | Current position is: {self.current_position} | Measured position is: {current_measurement}"
-                            )
                     else:
                         if self.camera_debug:
                             print("Ball not detected")
