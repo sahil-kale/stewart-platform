@@ -16,6 +16,8 @@ class BallController:
         saturation_angle,
         max_euclidean_error,
         integral_windup_clear_threshold,
+        stiction_compensation_deadband,
+        stiction_compensation_feedforward,
     ):
         # X-axis PID parameter range
         self.kp_range_x = kp_x
@@ -54,6 +56,9 @@ class BallController:
         self.current_ki_y = 0
         self.current_kd_y = 0
 
+        self.stiction_compensation_deadband = stiction_compensation_deadband
+        self.stiction_compensation_feedforward = stiction_compensation_feedforward
+
     # Use gains as determined by euclidean error magnitude
     def update(self, error, integral_error, previous_error, kp, ki, kd):
         # Calculate integral and derivative errors
@@ -64,11 +69,11 @@ class BallController:
 
         output = kp * error + kd * derivative_error + ki * integral_error
 
-        if np.abs(ki * integral_error) > 0.05:
+        if np.abs(ki * integral_error) > self.stiction_compensation_deadband:
             if output < 0:
-                output = output - 0.007
+                output = output - self.stiction_compensation_feedforward
             else:
-                output = output + 0.007
+                output = output + self.stiction_compensation_feedforward
         # Return the output and updated integral/previous errors for future use
         return output, integral_error, error
 
