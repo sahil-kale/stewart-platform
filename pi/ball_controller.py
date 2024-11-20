@@ -61,8 +61,14 @@ class BallController:
         derivative_error = (error - previous_error) / self.dt
 
         # PID formula
-        output = kp * error + ki * integral_error + kd * derivative_error
-
+        output = kp * error + kd * derivative_error
+        # if (np.abs(error) > 0.02):
+        output = output + ki * integral_error
+        if np.abs(ki * integral_error) > 0.05:
+            if output < 0:
+                output = output - 0.007
+            else:
+                output = output + 0.007
         # Return the output and updated integral/previous errors for future use
         return output, integral_error, error
 
@@ -99,10 +105,10 @@ class BallController:
             self.current_kd_y,
         )
 
-        if self.integral_error_x > self.integral_windup_clear_threshold:
+        if np.abs(self.integral_error_x) > self.integral_windup_clear_threshold:
             self.integral_error_x = 0
 
-        if self.integral_error_y > self.integral_windup_clear_threshold:
+        if np.abs(self.integral_error_y) > self.integral_windup_clear_threshold:
             self.integral_error_y = 0
 
         output_x = np.clip(output_x, -self.saturation_angle, self.saturation_angle)
