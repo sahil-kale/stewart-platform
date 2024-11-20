@@ -40,13 +40,13 @@ class MainControlLoop:
         cam_calibration_images: bool = False,
     ):
         self.dt = 0.02
-        self.saturate_angle = 6
+        self.saturate_angle = 12
         self.params = {
             "lh": 67.5 / 1000,
             "la": 122.2 / 1000,
             "platform_attachment_radius": 70 / 1000,
             "base_attachment_radius": 100 / 1000,
-            "resting_height": 0.17,
+            "resting_height": 0.15,
         }
 
         self.servo_offset_radians = [
@@ -84,18 +84,20 @@ class MainControlLoop:
             - self.params["platform_attachment_radius"],
         )
 
-        kp = 1.0
-        ki = 0.0
-        kd = 0.7
+        kp_range = [1.0, 2.0]
+        ki_range = [2.5, 0.0]
+        kd_range = [0.65, 0.65]
         self.ball_controller = BallController(
-            kp,
-            ki,
-            kd,
-            kp,
-            ki,
-            kd,
+            kp_range,
+            ki_range,
+            kd_range,
+            kp_range,
+            ki_range,
+            kd_range,
             self.dt,
             np.deg2rad(self.saturate_angle),
+            max_euclidean_error=0.15,
+            integral_windup_clear_threshold=10,
         )
 
         self.run_visualizer = run_visualizer
@@ -219,7 +221,7 @@ class MainControlLoop:
                     ki_x = self.slider_ki.val
                     kd_x = self.slider_kd.val
 
-                    self.ball_controller.set_gains(kp_x, ki_x, kd_x, kp_x, ki_x, kd_x)
+                    # self.ball_controller.set_gains(kp_x, ki_x, kd_x, kp_x, ki_x, kd_x)
 
                 pitch_rad = output_angles[0] + self.platform_offset_radians[0]
                 roll_rad = output_angles[1] + self.platform_offset_radians[1]
