@@ -14,9 +14,6 @@ from kalman_filter import KalmanFilter
 import time
 import json
 from platform_kinematics_feeder import PlatformKinematicsFeeder
-from trajectory_reference import TrajectoryReference, PathPoint
-from paths import generate_square_path
-from point import Point3D
 
 import os, pty
 
@@ -38,8 +35,9 @@ class MainControlLoop:
         camera_debug: bool = False,
         run_visualizer: bool = False,
         run_controller: bool = True,
+        cam_color_mask_detect: bool = False,
+        cam_calibration_images: bool = False,
         print_time_profile: bool = False,
-        path=None,
     ):
         self.dt = 0.02
         self.saturate_angle = 12
@@ -135,15 +133,13 @@ class MainControlLoop:
             self.cv_system = Camera(data["u"], data["v"], camera_port, camera_debug)
             self.cv_system.load_camera_params("pi/camera_calibration_data.json")
 
-        self.kalman_filter = KalmanFilter(self.dt, Q=50, R=50)
+        self.kalman_filter = KalmanFilter(
+            self.dt, Q=50, R=50
+        )  # Use default params for now
 
         self.current_position = Point(0, 0)
 
         self.print_time_profile = print_time_profile
-
-        self.path = path
-        if self.path is not None:
-            self.trajectory_reference = TrajectoryReference(self.path)
 
     def create_kinematic_sliders(self):
         """Create sliders for pitch, roll, and height"""
@@ -173,21 +169,11 @@ class MainControlLoop:
         f = open(logfile, "w")
         header_written = False
 
-        boot_time = time.time()
-
         while True:
             # Get pitch, roll, and height from the sliders
-            time_since_loop_iteration_start = time.time()
+            time_since_start = time.time()
             camera_valid = False
             desired_position = Point(0, 0)
-
-            if self.path is not None:
-                time_since_boot = time.time() - boot_time
-                desired_position = self.trajectory_reference.get_desired_point(
-                    time_since_boot
-                )
-                desired_position = Point(desired_position.x, desired_position.y)
-
             if self.run_controller:
                 if self.virtual is False:
                     current_measurement = self.cv_system.get_ball_coordinates()
@@ -266,12 +252,12 @@ class MainControlLoop:
                 )
                 time_after_serial_write = time.time()
 
-            time_elapsed = time.time() - time_since_loop_iteration_start
+            time_elapsed = time.time() - time_since_start
             pause_time = self.dt - time_elapsed
 
             if self.print_time_profile:
                 print(
-                    f"Time elapsed: {time_elapsed} seconds | Time since ball detected: {time_ball_detected - time_since_loop_iteration_start} seconds | Time after platform kinematics: {time_after_platform_kinematics - time_ball_detected} seconds | Time after servo kinematics: {time_after_servo_kinematics - time_after_platform_kinematics} seconds | Time after duty cycle computation: {time_after_duty_cycle_computation - time_after_servo_kinematics} seconds | Time after serial write: {time_after_serial_write - time_after_duty_cycle_computation} seconds"
+                    f"Time elapsed: {time_elapsed} seconds | Time since ball detected: {time_ball_detected - time_since_start} seconds | Time after platform kinematics: {time_after_platform_kinematics - time_ball_detected} seconds | Time after servo kinematics: {time_after_servo_kinematics - time_after_platform_kinematics} seconds | Time after duty cycle computation: {time_after_duty_cycle_computation - time_after_servo_kinematics} seconds | Time after serial write: {time_after_serial_write - time_after_duty_cycle_computation} seconds"
                 )
 
             if pause_time < 0:
@@ -337,19 +323,12 @@ if __name__ == "__main__":
         help="Print time profile",
     )
 
-    parser.add_argument("--path", type=str, default="none")
-
     args = parser.parse_args()
 
     run_controller = args.inhibit_controller == False
 
     servo_offsets = [-3, 0, 0]
     platform_offset = [-4, -4]  # degrees
-
-    path = None
-
-    if args.path == "square":
-        path = generate_square_path(0.15, 0.1, 5)
 
     mcl = MainControlLoop(
         args.port,
@@ -362,6 +341,5 @@ if __name__ == "__main__":
         run_controller=run_controller,
         cam_color_mask_detect=args.cam_color_mask_detect,
         print_time_profile=args.print_time_profile,
-        path=path,
     )
     mcl.run()
