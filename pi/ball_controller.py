@@ -64,7 +64,7 @@ class BallController:
         self.stiction_compensation_deadband = stiction_compensation_deadband
         self.stiction_compensation_feedforward = stiction_compensation_feedforward
 
-        num_delay_steps = 3
+        num_delay_steps = 5
 
         self.error_euclidean = 0
 
