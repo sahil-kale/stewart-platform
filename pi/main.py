@@ -90,6 +90,9 @@ class MainControlLoop:
         kp_range = [1.0, 1.0]
         ki_range = [[2.2, 0.0], [0, self.params["max_euclidean_distance"]]]
         kd_range = [0.55, 0.55]
+        trajectory_tracking_mode = False
+        if path is not None:
+            trajectory_tracking_mode = True
         self.ball_controller = BallController(
             kp_range,
             ki_range,
@@ -104,6 +107,7 @@ class MainControlLoop:
             stiction_compensation_deadband=0.05,
             stiction_compensation_feedforward=0.1,
             integral_clear_threshold=0.1,
+            trajectory_tracking_mode=trajectory_tracking_mode
         )
 
         self.run_visualizer = run_visualizer

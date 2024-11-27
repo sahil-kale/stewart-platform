@@ -21,6 +21,7 @@ class BallController:
         stiction_compensation_deadband,
         stiction_compensation_feedforward,
         integral_clear_threshold,
+        trajectory_tracking_mode,
     ):
         # X-axis PID parameter range
         self.kp_range_x = kp_x
@@ -81,6 +82,8 @@ class BallController:
             self.dt * num_delay_steps,
         )
 
+        self.trajectory_tracking_mode = trajectory_tracking_mode
+
     # Use gains as determined by euclidean error magnitude
     def update(
         self,
@@ -95,8 +98,11 @@ class BallController:
         # Calculate integral and derivative errors
         integral_error += error * self.dt
         derivative_error = (error - previous_error) / self.dt
-
-        integral_control_output = ki * integral_error
+        
+        if self.trajectory_tracking_mode == True:
+            integral_control_output = ki * integral_error
+        else:
+            integral_control_output = 0
 
         # PID formula
         output = kp * error + kd * derivative_error + integral_control_output
