@@ -101,8 +101,8 @@ class MainControlLoop:
             np.deg2rad(self.saturate_angle),
             max_euclidean_error=0.15,
             integral_windup_clear_threshold=10,
-            stiction_compensation_deadband=0.005,
-            stiction_compensation_feedforward=0.00,
+            stiction_compensation_deadband=0.05,
+            stiction_compensation_feedforward=0.1,
             integral_clear_threshold=0.1,
         )
 
