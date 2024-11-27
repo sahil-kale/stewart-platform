@@ -180,7 +180,7 @@ class MainControlLoop:
             # Get pitch, roll, and height from the sliders
             time_since_loop_iteration_start = time.time()
             camera_valid = False
-            desired_position = Point(0, 0)
+            desired_position = Point(0.10, 0.10)
 
             if self.path is not None:
                 time_since_boot = time.time() - boot_time
