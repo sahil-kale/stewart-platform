@@ -177,7 +177,7 @@ class MainControlLoop:
 
         boot_time = time.time()
 
-        desired_positions = [Point(0, 0.07), Point(0, -0.07)]
+        # desired_positions = [Point(0, 0.07), Point(0, -0.07)]
 
         while True:
             # Get pitch, roll, and height from the sliders
@@ -186,15 +186,9 @@ class MainControlLoop:
             
             if self.ball_controller.error_euclidean < 0.02:
                 self.num_waypoints_reached = self.num_waypoints_reached + 1
-                
-            desired_position = desired_positions[self.num_waypoints_reached % 2]
-
+            
             if self.path is not None:
-                time_since_boot = time.time() - boot_time
-                desired_position = self.trajectory_reference.get_desired_point(
-                    time_since_boot
-                )
-                desired_position = Point(desired_position.x, desired_position.y)
+                desired_position = self.path[self.num_waypoints_reached % 2]                
 
             if self.run_controller:
                 if self.virtual is False:
@@ -356,8 +350,8 @@ if __name__ == "__main__":
 
     path = None
 
-    if args.path == "square":
-        path = generate_square_path(0.15, 0.1, 5)
+    if args.path == "line":
+        path = [Point(0, 0.07), Point(0, -0.07)]
 
     mcl = MainControlLoop(
         args.port,
