@@ -2,7 +2,7 @@
 
 ## Platform 
 
-![image](https://github.com/user-attachments/assets/5734a78d-bb03-4ca8-8b7d-d5105231a85a)
+![image](https://github.com/user-attachments/assets/83f0e549-1c1d-4a22-9210-8dc8db567784)
 
 ## Developer Workflow
 0. First time setup: run `python3 scripts/setup.py`
