@@ -178,6 +178,8 @@ class MainControlLoop:
         boot_time = time.time()
 
         # desired_positions = [Point(0, 0.07), Point(0, -0.07)]
+        if self.path is None:
+            desired_position = Point(0, 0)
 
         while True:
             # Get pitch, roll, and height from the sliders
