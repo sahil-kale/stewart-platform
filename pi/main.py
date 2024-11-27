@@ -328,7 +328,7 @@ if __name__ == "__main__":
     run_controller = args.inhibit_controller == False
 
     servo_offsets = [-3, 0, 0]
-    platform_offset = [-4, -4]  # degrees
+    platform_offset = [-6, -4]  # degrees
 
     mcl = MainControlLoop(
         args.port,
