@@ -66,6 +66,8 @@ class BallController:
 
         num_delay_steps = 3
 
+        self.error_euclidean = 0
+
         self.anti_stiction_controller_x = AntiStictionController(
             self.stiction_compensation_deadband,
             self.stiction_compensation_feedforward,
@@ -112,13 +114,13 @@ class BallController:
         # error for y is inverted
         error_y = -error_y
 
-        error_euclidean = math.sqrt(error_x**2 + error_y**2)
-        if error_euclidean > self.integral_clear_threshold:
+        self.error_euclidean = math.sqrt(error_x**2 + error_y**2)
+        if self.error_euclidean > self.integral_clear_threshold:
             self.integral_error_x = 0
             self.integral_error_y = 0
 
         # Interpolate between inner and outer gains to get current gains
-        self.update_instantaneous_gains(error_euclidean)
+        self.update_instantaneous_gains(self.error_euclidean)
 
         # Update X control
         output_x, self.integral_error_x, self.previous_error_x = self.update(

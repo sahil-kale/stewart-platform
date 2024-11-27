@@ -145,6 +145,7 @@ class MainControlLoop:
         self.path = path
         if self.path is not None:
             self.trajectory_reference = TrajectoryReference(self.path)
+        self.num_waypoints_reached = 0
 
     def create_kinematic_sliders(self):
         """Create sliders for pitch, roll, and height"""
@@ -176,11 +177,17 @@ class MainControlLoop:
 
         boot_time = time.time()
 
+        desired_positions = [Point(-0.1, -0.1), Point(0.1, 0.1)]
+
         while True:
             # Get pitch, roll, and height from the sliders
             time_since_loop_iteration_start = time.time()
             camera_valid = False
-            desired_position = Point(0.10, 0.10)
+            
+            if self.ball_controller.error_euclidean < 0.02:
+                self.num_waypoints_reached = self.num_waypoints_reached + 1
+                
+            desired_position = desired_positions[self.num_waypoints_reached % 2]
 
             if self.path is not None:
                 time_since_boot = time.time() - boot_time
