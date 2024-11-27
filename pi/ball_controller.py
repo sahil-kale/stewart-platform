@@ -89,7 +89,6 @@ class BallController:
         error_y = -error_y
 
         error_euclidean = math.sqrt(error_x**2 + error_y**2)
-
         if error_euclidean > self.integral_clear_threshold:
             self.integral_error_x = 0
             self.integral_error_y = 0
