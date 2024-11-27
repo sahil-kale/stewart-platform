@@ -1,6 +1,8 @@
 from point import Point
 import numpy as np
 import math
+import time
+from anti_stiction import AntiStictionController
 
 
 class BallController:
@@ -62,23 +64,45 @@ class BallController:
         self.stiction_compensation_deadband = stiction_compensation_deadband
         self.stiction_compensation_feedforward = stiction_compensation_feedforward
 
+        num_delay_steps = 3
+
+        self.anti_stiction_controller_x = AntiStictionController(
+            self.stiction_compensation_deadband,
+            self.stiction_compensation_feedforward,
+            0,
+            self.dt * num_delay_steps,
+        )
+        self.anti_stiction_controller_y = AntiStictionController(
+            self.stiction_compensation_deadband,
+            self.stiction_compensation_feedforward,
+            0,
+            self.dt * num_delay_steps,
+        )
+
     # Use gains as determined by euclidean error magnitude
-    def update(self, error, integral_error, previous_error, kp, ki, kd):
+    def update(
+        self,
+        error,
+        integral_error,
+        previous_error,
+        kp,
+        ki,
+        kd,
+        anti_stiction_controller,
+    ):
         # Calculate integral and derivative errors
         integral_error += error * self.dt
         derivative_error = (error - previous_error) / self.dt
 
+        integral_control_output = ki * integral_error
+
         # PID formula
+        output = kp * error + kd * derivative_error + integral_control_output
 
-        output = kp * error + kd * derivative_error + ki * integral_error
-
-        if np.abs(ki * integral_error) > self.stiction_compensation_deadband:
-            if output < 0:
-                output = output - self.stiction_compensation_feedforward
-            else:
-                output = output + self.stiction_compensation_feedforward
+        # Anti-stiction compensation
+        anti_stiction_output = anti_stiction_controller.run(output, time.time())
         # Return the output and updated integral/previous errors for future use
-        return output, integral_error, error
+        return output + anti_stiction_output, integral_error, error
 
     def run_control_loop(self, desired_position: Point, current_position: Point):
         # Calculate errors
@@ -104,6 +128,7 @@ class BallController:
             self.current_kp_x,
             self.current_ki_x,
             self.current_kd_x,
+            self.anti_stiction_controller_x,
         )
 
         # Update Y control
@@ -114,6 +139,7 @@ class BallController:
             self.current_kp_y,
             self.current_ki_y,
             self.current_kd_y,
+            self.anti_stiction_controller_y,
         )
 
         if np.abs(self.integral_error_x) > self.integral_windup_clear_threshold:
