@@ -1,4 +1,7 @@
-# mte-380
+# 3-DOF Stewart Platform
+
+## Control Architecture
+![image](https://github.com/user-attachments/assets/f244df79-96c0-45f6-99fd-0ee2d71eee96)
 
 ## Platform 
 
