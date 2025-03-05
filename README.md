@@ -14,3 +14,6 @@ The full system report is available here: [MTE-380-Final-Report.pdf](https://git
 1. Run `python3 scripts/test_pi_code.py` to run the python unit tests
 2. Run `python3 scripts/format.py` to run the formatter
 3. Run `python3 scripts/build_arduino.py --deploy` to deploy the code to the arduino
+
+## Visualization Command
+`python3 pi/main.py --visualize --virtual --inhibit_controller`
